@@ -22,6 +22,7 @@ export interface UndoResult {
 }
 
 export interface PreparedAction {
+  readonly actionId: string;
   readonly input: ActionInput;
   readonly undoStrategy: UndoStrategyType;
   readonly metadata?: Readonly<Record<string, unknown>>;

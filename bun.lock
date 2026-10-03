@@ -21,6 +21,15 @@
         "@mercy/shared": "workspace:*",
       },
     },
+    "packages/filesystem": {
+      "name": "@mercy/filesystem",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mercy/core": "workspace:*",
+        "@mercy/shared": "workspace:*",
+        "@mercy/snapshots": "workspace:*",
+      },
+    },
     "packages/journal": {
       "name": "@mercy/journal",
       "version": "0.1.0",
@@ -65,6 +74,8 @@
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.5.15", "", { "os": "win32", "cpu": "x64" }, "sha512-yAzh4UqEImV6Hcy0zjUqNfJAsUhoD64FBQCdTG8Md/Z2wQeVP/ZmJ3XRYAs1g8J9fjTFyl2fCtc5FB5til47+g=="],
 
     "@mercy/core": ["@mercy/core@workspace:packages/core"],
+
+    "@mercy/filesystem": ["@mercy/filesystem@workspace:packages/filesystem"],
 
     "@mercy/journal": ["@mercy/journal@workspace:packages/journal"],
 
