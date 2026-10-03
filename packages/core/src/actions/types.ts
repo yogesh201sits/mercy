@@ -1,19 +1,20 @@
-export type ActionStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed"
-  | "undoing"
-  | "undone"
-  | "undo_failed";
+import type {
+  actionStatusSchema,
+  actionTypeSchema,
+  undoStrategySchema
+} from "@mercy/shared";
 
-export type ActionType =
-  | "create"
-  | "update"
-  | "delete"
-  | "rename"
-  | "move"
-  | "custom";
+export type ActionStatus = ReturnType<
+  typeof actionStatusSchema.parse
+>;
+
+export type ActionType = ReturnType<
+  typeof actionTypeSchema.parse
+>;
+
+export type UndoStrategyType = ReturnType<
+  typeof undoStrategySchema.parse
+>;
 
 export interface Action {
   readonly id: string;
@@ -31,8 +32,3 @@ export interface Action {
 
   readonly undoStrategy: UndoStrategyType;
 }
-
-export type UndoStrategyType =
-  | "restore"
-  | "reverse"
-  | "compensate";
