@@ -1,14 +1,13 @@
 {
-  "name": "@mercy/core",
+  "name": "@mercy/journal",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "dependencies": {
-    "@mercy/shared": "workspace:*"
-  },
   "exports": {
-    ".": {
-      "types": "./src/index.ts"
-    }
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mercy/core": "workspace:*",
+    "@mercy/shared": "workspace:*"
   }
 }
