@@ -20,7 +20,7 @@ import type {
   SnapshotStore
 } from "@mercy/core";
 
-import { FilesystemAdapter } from "./filesystem-adapter";
+import { FilesystemAdapter } from "../packages/filesystem/src/filesystem-adapter";
 
 const testRoot = join(
   process.cwd(),
