@@ -1,16 +1,27 @@
-import type { ActionStatus } from "@mercy/core";
+import type {
+  ActionResult,
+  ActionStatus,
+  UndoResult
+} from "@mercy/core";
+import { MercyError } from "@mercy/shared";
+
 import type {
   ActionJournal,
   CreateJournalEntry,
   JournalEntry
 } from "./types";
-import { MercyError } from "@mercy/shared";
-import type { ActionResult } from "@mercy/core";
 
-export class InMemoryActionJournal implements ActionJournal {
-  private readonly entries = new Map<string, JournalEntry>();
+export class InMemoryActionJournal
+  implements ActionJournal
+{
+  private readonly entries = new Map<
+    string,
+    JournalEntry
+  >();
 
-  async create(input: CreateJournalEntry): Promise<JournalEntry> {
+  async create(
+    input: CreateJournalEntry
+  ): Promise<JournalEntry> {
     if (this.entries.has(input.id)) {
       throw new MercyError(
         "ACTION_FAILED",
@@ -25,7 +36,13 @@ export class InMemoryActionJournal implements ActionJournal {
       target: input.input.target,
       status: "pending",
       createdAt: new Date(),
-      undoStrategy: input.undoStrategy
+      undoStrategy: input.undoStrategy,
+
+      ...(input.input.metadata
+        ? {
+            metadata: input.input.metadata
+          }
+        : {})
     };
 
     this.entries.set(input.id, entry);
@@ -33,23 +50,56 @@ export class InMemoryActionJournal implements ActionJournal {
     return entry;
   }
 
-  async markRunning(actionId: string): Promise<JournalEntry> {
-    return this.updateStatus(actionId, "running");
+  async markSnapshotCreated(
+    actionId: string,
+    snapshotId: string
+  ): Promise<JournalEntry> {
+    const entry = this.require(actionId);
+
+    const updated: JournalEntry = {
+      ...entry,
+      beforeSnapshotId: snapshotId
+    };
+
+    this.entries.set(actionId, updated);
+
+    return updated;
+  }
+
+  async markRunning(
+    actionId: string
+  ): Promise<JournalEntry> {
+    const entry = this.require(actionId);
+
+    const updated: JournalEntry = {
+      ...entry,
+      status: "running",
+      startedAt: new Date()
+    };
+
+    this.entries.set(actionId, updated);
+
+    return updated;
   }
 
   async markCompleted(
     actionId: string,
     result: ActionResult,
     afterHash?: string
-    ): Promise<JournalEntry> {
+  ): Promise<JournalEntry> {
     const entry = this.require(actionId);
 
     const updated: JournalEntry = {
-        ...entry,
-        status: "completed",
-        completedAt: new Date(),
-        result,
-        ...(afterHash !== undefined ? { afterHash } : {})
+      ...entry,
+      status: "completed",
+      completedAt: new Date(),
+      result,
+
+      ...(afterHash !== undefined
+        ? {
+            afterHash
+          }
+        : {})
     };
 
     this.entries.set(actionId, updated);
@@ -79,13 +129,24 @@ export class InMemoryActionJournal implements ActionJournal {
     return updated;
   }
 
-  async markUndoing(actionId: string): Promise<JournalEntry> {
-    return this.updateStatus(actionId, "undoing");
+  async markUndoing(
+    actionId: string
+  ): Promise<JournalEntry> {
+    const entry = this.require(actionId);
+
+    const updated: JournalEntry = {
+      ...entry,
+      status: "undoing"
+    };
+
+    this.entries.set(actionId, updated);
+
+    return updated;
   }
 
   async markUndone(
     actionId: string,
-    result: NonNullable<JournalEntry["undoResult"]>
+    result: UndoResult
   ): Promise<JournalEntry> {
     const entry = this.require(actionId);
 
@@ -122,18 +183,32 @@ export class InMemoryActionJournal implements ActionJournal {
     return updated;
   }
 
-  async get(actionId: string): Promise<JournalEntry | null> {
+  async get(
+    actionId: string
+  ): Promise<JournalEntry | null> {
     return this.entries.get(actionId) ?? null;
   }
 
-  async list(projectId: string): Promise<readonly JournalEntry[]> {
-    return [...this.entries.values()].filter(
-      (entry) => entry.projectId === projectId
-    );
+  async list(
+    projectId: string
+  ): Promise<readonly JournalEntry[]> {
+    return [...this.entries.values()]
+      .filter(
+        (entry) =>
+          entry.projectId === projectId
+      )
+      .sort(
+        (a, b) =>
+          b.createdAt.getTime() -
+          a.createdAt.getTime()
+      );
   }
 
-  private require(actionId: string): JournalEntry {
-    const entry = this.entries.get(actionId);
+  private require(
+    actionId: string
+  ): JournalEntry {
+    const entry =
+      this.entries.get(actionId);
 
     if (!entry) {
       throw new MercyError(
@@ -143,21 +218,5 @@ export class InMemoryActionJournal implements ActionJournal {
     }
 
     return entry;
-  }
-
-  private async updateStatus(
-    actionId: string,
-    status: ActionStatus
-  ): Promise<JournalEntry> {
-    const entry = this.require(actionId);
-
-    const updated: JournalEntry = {
-      ...entry,
-      status
-    };
-
-    this.entries.set(actionId, updated);
-
-    return updated;
   }
 }

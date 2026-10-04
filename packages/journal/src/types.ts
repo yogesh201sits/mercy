@@ -20,6 +20,11 @@ export interface JournalEntry extends Action {
 export interface ActionJournal {
   create(input: CreateJournalEntry): Promise<JournalEntry>;
 
+  markSnapshotCreated(
+    actionId: string,
+    snapshotId: string
+  ): Promise<JournalEntry>;
+
   markRunning(actionId: string): Promise<JournalEntry>;
 
   markCompleted(
@@ -47,5 +52,7 @@ export interface ActionJournal {
 
   get(actionId: string): Promise<JournalEntry | null>;
 
-  list(projectId: string): Promise<readonly JournalEntry[]>;
+  list(
+    projectId: string
+  ): Promise<readonly JournalEntry[]>;
 }

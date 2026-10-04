@@ -6,6 +6,8 @@ import {
   test
 } from "bun:test";
 
+import type { Action } from "../packages/core/src";
+
 import {
   mkdir,
   readFile,
@@ -15,11 +17,6 @@ import {
 
 import { join } from "node:path";
 
-import type {
-  Snapshot,
-  SnapshotStore
-} from "@mercy/core";
-
 import { FilesystemAdapter } from "../packages/filesystem/src/filesystem-adapter";
 
 const testRoot = join(
@@ -27,83 +24,9 @@ const testRoot = join(
   ".test-filesystem"
 );
 
-class TestSnapshotStore implements SnapshotStore {
-  private readonly snapshots = new Map<
-    string,
-    {
-      snapshot: Snapshot;
-      data: Uint8Array;
-    }
-  >();
-
-  async create(input: {
-    readonly actionId: string;
-    readonly data: Uint8Array;
-    readonly metadata?: Readonly<
-      Record<string, unknown>
-    >;
-  }): Promise<Snapshot> {
-    const id = crypto.randomUUID();
-
-    const snapshot: Snapshot = {
-      id,
-      actionId: input.actionId,
-      storageKey: `${input.actionId}/${id}.snapshot`,
-      checksum: "test-checksum",
-      size: input.data.byteLength,
-      createdAt: new Date(),
-      ...(input.metadata
-        ? { metadata: input.metadata }
-        : {})
-    };
-
-    this.snapshots.set(id, {
-      snapshot,
-      data: input.data
-    });
-
-    return snapshot;
-  }
-
-  async get(
-    snapshotId: string
-  ): Promise<Snapshot | null> {
-    return (
-      this.snapshots.get(snapshotId)
-        ?.snapshot ?? null
-    );
-  }
-
-  async read(
-    snapshotId: string
-  ): Promise<Uint8Array> {
-    const entry =
-      this.snapshots.get(snapshotId);
-
-    if (!entry) {
-      throw new Error(
-        `Snapshot not found: ${snapshotId}`
-      );
-    }
-
-    return entry.data;
-  }
-
-  async delete(
-    snapshotId: string
-  ): Promise<void> {
-    this.snapshots.delete(snapshotId);
-  }
-}
-
-const snapshotStore =
-  new TestSnapshotStore();
-
-const adapter =
-  new FilesystemAdapter(
-    testRoot,
-    snapshotStore
-  );
+const adapter = new FilesystemAdapter(
+  testRoot
+);
 
 beforeAll(async () => {
   await mkdir(testRoot, {
@@ -151,6 +74,14 @@ describe("FilesystemAdapter", () => {
         target: "hello.txt"
       })
     ).toBe(true);
+
+    expect(
+      adapter.canHandle({
+        projectId: "project-1",
+        type: "move",
+        target: "hello.txt"
+      })
+    ).toBe(true);
   });
 
   test("rejects unsupported actions", () => {
@@ -163,7 +94,7 @@ describe("FilesystemAdapter", () => {
     ).toBe(false);
   });
 
-  test("prepares a write action", async () => {
+  test("prepares a create action", async () => {
     const prepared =
       await adapter.prepare({
         projectId: "project-1",
@@ -184,6 +115,27 @@ describe("FilesystemAdapter", () => {
     ).toBe("restore");
   });
 
+  test("prepares a rename action with reverse undo", async () => {
+    const prepared =
+      await adapter.prepare({
+        projectId: "project-1",
+        type: "rename",
+        target: "old.txt",
+        metadata: {
+          actionId: "action-2",
+          destination: "new.txt"
+        }
+      });
+
+    expect(
+      prepared.actionId
+    ).toBe("action-2");
+
+    expect(
+      prepared.undoStrategy
+    ).toBe("reverse");
+  });
+
   test("writes a new file", async () => {
     const prepared =
       await adapter.prepare({
@@ -191,7 +143,7 @@ describe("FilesystemAdapter", () => {
         type: "create",
         target: "created.txt",
         metadata: {
-          actionId: "action-2",
+          actionId: "action-3",
           content: "hello mercy"
         }
       });
@@ -210,6 +162,10 @@ describe("FilesystemAdapter", () => {
     expect(content).toBe(
       "hello mercy"
     );
+
+    expect(
+      result.afterHash
+    ).toBeDefined();
   });
 
   test("updates an existing file", async () => {
@@ -224,12 +180,15 @@ describe("FilesystemAdapter", () => {
         type: "update",
         target: "update.txt",
         metadata: {
-          actionId: "action-3",
+          actionId: "action-4",
           content: "after"
         }
       });
 
-    await adapter.execute(prepared);
+    const result =
+      await adapter.execute(prepared);
+
+    expect(result.success).toBe(true);
 
     const content =
       await readFile(
@@ -238,6 +197,10 @@ describe("FilesystemAdapter", () => {
       );
 
     expect(content).toBe("after");
+
+    expect(
+      result.afterHash
+    ).toBeDefined();
   });
 
   test("deletes a file", async () => {
@@ -252,7 +215,7 @@ describe("FilesystemAdapter", () => {
         type: "delete",
         target: "delete.txt",
         metadata: {
-          actionId: "action-4"
+          actionId: "action-5"
         }
       });
 
@@ -280,7 +243,7 @@ describe("FilesystemAdapter", () => {
         type: "rename",
         target: "old.txt",
         metadata: {
-          actionId: "action-5",
+          actionId: "action-6",
           destination: "new.txt"
         }
       });
@@ -299,6 +262,12 @@ describe("FilesystemAdapter", () => {
     expect(content).toBe(
       "rename me"
     );
+
+    await expect(
+      readFile(
+        join(testRoot, "old.txt")
+      )
+    ).rejects.toThrow();
   });
 
   test("rejects absolute filesystem targets", async () => {
@@ -308,7 +277,7 @@ describe("FilesystemAdapter", () => {
         type: "create",
         target: "C:\\outside.txt",
         metadata: {
-          actionId: "action-6",
+          actionId: "action-7",
           content: "unsafe"
         }
       })
@@ -324,12 +293,12 @@ describe("FilesystemAdapter", () => {
         type: "create",
         target: "../../outside.txt",
         metadata: {
-          actionId: "action-7",
+          actionId: "action-8",
           content: "unsafe"
         }
       })
     ).rejects.toThrow(
-      "Filesystem target escapes the project directory"
+      "Filesystem target escapes the root directory"
     );
   });
 
@@ -344,9 +313,61 @@ describe("FilesystemAdapter", () => {
         }
       })
     ).rejects.toThrow(
-      "Filesystem action requires an actionId"
+      "Filesystem action requires metadata.actionId"
     );
   });
+
+  test("rejects missing content for create", async () => {
+    const prepared =
+      await adapter.prepare({
+        projectId: "project-1",
+        type: "create",
+        target: "missing-content.txt",
+        metadata: {
+          actionId: "action-9"
+        }
+      });
+
+    await expect(
+      adapter.execute(prepared)
+    ).rejects.toThrow(
+      "create requires metadata.content"
+    );
+  });
+
+  test("rejects missing content for update", async () => {
+    const prepared =
+      await adapter.prepare({
+        projectId: "project-1",
+        type: "update",
+        target: "missing-content.txt",
+        metadata: {
+          actionId: "action-10"
+        }
+      });
+
+    await expect(
+      adapter.execute(prepared)
+    ).rejects.toThrow(
+      "update requires metadata.content"
+    );
+  });
+
+  test("rejects missing destination for rename", async () => {
+    await expect(
+      adapter.prepare({
+        projectId: "project-1",
+        type: "rename",
+        target: "old.txt",
+        metadata: {
+          actionId: "action-11"
+        }
+      })
+    ).rejects.toThrow(
+      "rename requires metadata.destination"
+    );
+  });
+
   test("captures the previous file state", async () => {
     await writeFile(
       join(testRoot, "snapshot.txt"),
@@ -359,32 +380,168 @@ describe("FilesystemAdapter", () => {
         type: "update",
         target: "snapshot.txt",
         metadata: {
-          actionId: "action-8",
+          actionId: "action-12",
           content: "changed"
         }
       });
 
-    const snapshot =
+    const captured =
       await adapter.snapshot(prepared);
 
-    expect(snapshot.actionId).toBe(
-      "action-8"
+    expect(captured.data).toBeInstanceOf(
+      Uint8Array
     );
 
-    expect(snapshot.metadata).toEqual({
+    expect(
+      new TextDecoder().decode(
+        captured.data
+      )
+    ).toBe("original");
+
+    expect(
+      captured.metadata
+    ).toEqual({
       exists: true,
       path: "snapshot.txt",
       size: 8,
       mode: expect.any(Number)
     });
+  });
 
-    const data =
-      await snapshotStore.read(
-        snapshot.id
-      );
+  test("captures missing file state", async () => {
+    const prepared =
+      await adapter.prepare({
+        projectId: "project-1",
+        type: "create",
+        target: "does-not-exist.txt",
+        metadata: {
+          actionId: "action-13",
+          content: "new file"
+        }
+      });
+
+    const captured =
+      await adapter.snapshot(prepared);
 
     expect(
-      new TextDecoder().decode(data)
-    ).toBe("original");
+      captured.data.byteLength
+    ).toBe(0);
+
+    expect(
+      captured.metadata
+    ).toEqual({
+      exists: false,
+      path: "does-not-exist.txt"
+    });
+  });
+
+  test("verifies an unchanged file", async () => {
+    await writeFile(
+      join(testRoot, "verify.txt"),
+      "verify me"
+    );
+
+    const prepared =
+      await adapter.prepare({
+        projectId: "project-1",
+        type: "update",
+        target: "verify.txt",
+        metadata: {
+          actionId: "action-14",
+          content: "changed"
+        }
+      });
+
+    const execution =
+      await adapter.execute(prepared);
+
+    const action: Action = {
+      id: "action-14",
+      projectId: "project-1",
+      type: "update",
+      target: "verify.txt",
+      status: "completed",
+      undoStrategy: "restore",
+      createdAt: new Date(),
+
+      ...(execution.afterHash
+        ? {
+            afterHash: execution.afterHash
+          }
+        : {})
+    };
+
+    const verification =
+      await adapter.verify(action);
+
+    expect(
+      verification.conflict
+    ).toBe(false);
+
+    expect(
+      verification.valid
+    ).toBe(true);
+  });
+
+  test("detects a file changed after execution", async () => {
+    await writeFile(
+      join(testRoot, "conflict.txt"),
+      "initial"
+    );
+
+    const prepared =
+      await adapter.prepare({
+        projectId: "project-1",
+        type: "update",
+        target: "conflict.txt",
+        metadata: {
+          actionId: "action-15",
+          content: "changed"
+        }
+      });
+
+    const execution =
+      await adapter.execute(prepared);
+
+    expect(execution.success).toBe(true);
+    expect(execution.afterHash).toBeDefined();
+
+    await writeFile(
+      join(testRoot, "conflict.txt"),
+      "externally changed"
+    );
+
+    const action: Action = {
+      id: "action-15",
+      projectId: "project-1",
+      type: "update",
+      target: "conflict.txt",
+      status: "completed",
+      undoStrategy: "restore",
+      createdAt: new Date(),
+
+      ...(execution.afterHash
+        ? {
+            afterHash: execution.afterHash
+          }
+        : {})
+    };
+
+    const verification =
+      await adapter.verify(action);
+
+    expect(
+      verification.valid
+    ).toBe(false);
+
+    expect(
+      verification.conflict
+    ).toBe(true);
+
+    expect(
+      verification.reason
+    ).toBe(
+      "Resource changed after the action completed."
+    );
   });
 });
