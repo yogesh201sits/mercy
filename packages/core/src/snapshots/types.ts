@@ -8,5 +8,15 @@ export interface Snapshot {
 
   readonly createdAt: Date;
 
-  readonly metadata?: Readonly<Record<string, unknown>>;
+  readonly metadata?: Readonly<
+    Record<string, unknown>
+  >;
+}
+
+export interface CapturedState {
+  readonly data: Uint8Array;
+
+  readonly metadata?: Readonly<
+    Record<string, unknown>
+  >;
 }

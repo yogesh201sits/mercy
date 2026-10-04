@@ -3,10 +3,10 @@ import { describe, expect, it } from "bun:test";
 import type {
   ActionResult,
   UndoResult
-} from "@mercy/core";
+} from "../packages/core/src";
 
-import { createPrismaClient } from "../client/client";
-import { PostgresActionJournal } from "./action-journal";
+import { createPrismaClient } from "../packages/postgres/src";
+import { PostgresActionJournal } from "../packages/postgres/src/journal/action-journal";
 
 const prisma = createPrismaClient();
 

@@ -12,6 +12,7 @@ export interface ActionResult {
   readonly success: boolean;
   readonly result?: unknown;
   readonly error?: string;
+  readonly afterHash?: string;
 }
 
 export interface UndoResult {

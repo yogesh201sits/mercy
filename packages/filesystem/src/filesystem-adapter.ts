@@ -1,492 +1,509 @@
 import {
-    access,
-    mkdir,
-    readFile,
-    rename,
-    rm,
-    stat,
-    writeFile
+  readFile,
+  rename,
+  rm,
+  stat,
+  writeFile,
+  chmod
 } from "node:fs/promises";
-
 import {
-    dirname,
-    isAbsolute,
-    relative,
-    resolve
+  dirname,
+  isAbsolute,
+  relative,
+  resolve
 } from "node:path";
 
 import type {
-    Action,
-    ActionAdapter,
-    ActionInput,
-    ActionResult,
-    PreparedAction,
-    UndoResult
+  Action,
+  ActionAdapter,
+  ActionInput,
+  ActionResult,
+  CapturedState,
+  PreparedAction,
+  Snapshot,
+  UndoResult
 } from "@mercy/core";
 
-import {
-    MercyError,
-    sha256
-} from "@mercy/shared";
+import { MercyError, sha256 } from "@mercy/shared";
 
-import type {
-    Snapshot,
-    SnapshotStore
-} from "@mercy/core";
+export class FilesystemAdapter
+  implements ActionAdapter
+{
+  readonly name = "filesystem";
 
-export class FilesystemAdapter implements ActionAdapter {
-    readonly name = "filesystem";
+  constructor(
+    private readonly rootDirectory: string
+  ) {}
 
-    constructor(
-        private readonly rootDirectory: string,
-        private readonly snapshots: SnapshotStore
+  canHandle(
+    input: ActionInput
+  ): boolean {
+    return [
+      "create",
+      "update",
+      "delete",
+      "rename",
+      "move"
+    ].includes(input.type);
+  }
+
+  async prepare(
+    input: ActionInput
+  ): Promise<PreparedAction> {
+    if (!this.canHandle(input)) {
+      throw new MercyError(
+        "INVALID_INPUT",
+        `Unsupported filesystem action: ${input.type}`
+      );
+    }
+
+    const actionId =
+      input.metadata?.actionId;
+
+    if (
+      typeof actionId !== "string" ||
+      actionId.length === 0
     ) {
-        this.rootDirectory = resolve(rootDirectory);
+      throw new MercyError(
+        "INVALID_INPUT",
+        "Filesystem action requires metadata.actionId"
+      );
     }
 
-    canHandle(input: ActionInput): boolean {
-        return [
-            "create",
-            "update",
-            "delete",
-            "rename",
-            "move"
-        ].includes(input.type);
-    }
+    this.resolveTarget(
+      input.target
+    );
 
-    async prepare(
-        input: ActionInput
-    ): Promise<PreparedAction> {
-        if (!this.canHandle(input)) {
-            throw new MercyError(
-                "ADAPTER_NOT_FOUND",
-                `Filesystem adapter cannot handle action type: ${input.type}`
-            );
-        }
-
-        const actionId = input.metadata?.actionId;
-
-        if (typeof actionId !== "string") {
-            throw new MercyError(
-                "INVALID_INPUT",
-                "Filesystem action requires an actionId"
-            );
-        }
-
-        // Validate the target before creating a prepared action.
-        this.resolveTarget(input.target);
-
-        if (
-            input.type === "rename" ||
-            input.type === "move"
-        ) {
-            const destination =
-                input.metadata?.destination;
-
-            if (typeof destination !== "string") {
-                throw new MercyError(
-                    "INVALID_INPUT",
-                    "Filesystem rename/move requires metadata.destination"
-                );
-            }
-
-            this.resolveTarget(destination);
-        }
-
-        return {
-            actionId,
-            input,
-            undoStrategy:
-                input.type === "rename" ||
-                    input.type === "move"
-                    ? "reverse"
-                    : "restore",
-            ...(input.metadata
-                ? { metadata: input.metadata }
-                : {})
-        };
-    }
-
-    async snapshot(
-        action: PreparedAction
-    ): Promise<Snapshot> {
-        const path = this.resolveTarget(
-            action.input.target
-        );
-
-        const exists = await this.exists(path);
-
-        if (!exists) {
-            return this.snapshots.create({
-                actionId: action.actionId,
-                data: new Uint8Array(),
-                metadata: {
-                    exists: false,
-                    path: action.input.target
-                }
-            });
-        }
-
-        const fileStat = await stat(path);
-
-        if (!fileStat.isFile()) {
-            throw new MercyError(
-                "ACTION_FAILED",
-                `Filesystem target is not a file: ${action.input.target}`
-            );
-        }
-
-        const data = await readFile(path);
-
-        return this.snapshots.create({
-            actionId: action.actionId,
-            data,
-            metadata: {
-                exists: true,
-                path: action.input.target,
-                size: data.byteLength,
-                mode: fileStat.mode
-            }
-        });
-    }
-
-    async execute(
-        action: PreparedAction
-    ): Promise<ActionResult> {
-        const {
-            input
-        } = action;
-
-        try {
-            switch (input.type) {
-                case "create":
-
-                case "update":
-                    return await this.write(action);
-
-                case "delete":
-                    return await this.delete(action);
-
-                case "rename":
-                case "move":
-                    return await this.renameOrMove(action);
-
-                default:
-                    throw new MercyError(
-                        "ACTION_FAILED",
-                        `Unsupported filesystem action: ${input.type}`
-                    );
-            }
-        } catch (error) {
-            if (error instanceof MercyError) {
-                throw error;
-            }
-
-            throw new MercyError(
-                "ACTION_FAILED",
-                `Filesystem action failed: ${input.target}`,
-                {
-                    cause: error
-                }
-            );
-        }
-    }
-
-    async undo(
-        action: Action,
-        snapshot: Snapshot
-    ): Promise<UndoResult> {
-        try {
-            const verification =
-                await this.verify(action);
-
-            if (verification.conflict) {
-
-                return {
-                    actionId: action.id,
-                    success: false,
-                    conflict: true,
-                    error: verification.reason ?? ""
-                };
-            }
-
-            const metadata = snapshot.metadata;
-
-            if (
-                metadata?.exists === false
-            ) {
-                await rm(
-                    this.resolveTarget(action.target),
-                    {
-                        force: true
-                    }
-                );
-
-                return {
-                    actionId: action.id,
-                    success: true,
-                    conflict: false
-                };
-            }
-
-            const data =
-                await this.snapshots.read(
-                    snapshot.id
-                );
-
-            await mkdir(
-                dirname(
-                    this.resolveTarget(action.target)
-                ),
-                {
-                    recursive: true
-                }
-            );
-
-            await writeFile(
-                this.resolveTarget(action.target),
-                data
-            );
-
-            return {
-                actionId: action.id,
-                success: true,
-                conflict: false
-            };
-        } catch (error) {
-            return {
-                actionId: action.id,
-                success: false,
-                conflict: false,
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Filesystem undo failed"
-            };
-        }
-    }
-
-    async verify(
-        action: Action
+    if (
+      input.type === "rename" ||
+      input.type === "move"
     ) {
-        const path = this.resolveTarget(
-            action.target
+      const destination =
+        input.metadata?.destination;
+
+      if (
+        typeof destination !== "string" ||
+        destination.length === 0
+      ) {
+        throw new MercyError(
+          "INVALID_INPUT",
+          `${input.type} requires metadata.destination`
         );
+      }
 
-        const exists = await this.exists(path);
-
-        if (!action.afterHash) {
-            return {
-                valid: exists,
-                conflict: false
-            };
-        }
-
-        if (!exists) {
-            return {
-                valid: false,
-                conflict: true,
-                reason:
-                    "Filesystem target no longer exists"
-            };
-        }
-
-        const data = await readFile(path);
-
-        const currentHash =
-            await sha256(data);
-
-        if (
-            currentHash !== action.afterHash
-        ) {
-            return {
-                valid: false,
-                conflict: true,
-                reason:
-                    "Filesystem target changed after the action"
-            };
-        }
-
-        return {
-            valid: true,
-            conflict: false
-        };
+      this.resolveTarget(
+        destination
+      );
     }
 
-    private async write(
-        action: PreparedAction
-    ): Promise<ActionResult> {
-        const {
-            input
-        } = action;
+    return {
+      actionId,
+      input,
+      undoStrategy:
+        input.type === "rename" ||
+        input.type === "move"
+          ? "reverse"
+          : "restore",
+      ...(input.metadata
+        ? {
+            metadata:
+              input.metadata
+          }
+        : {})
+    };
+  }
 
-        const content =
+  async snapshot(
+    action: PreparedAction
+  ): Promise<CapturedState> {
+    const path =
+      this.resolveTarget(
+        action.input.target
+      );
+
+    try {
+      const fileStat =
+        await stat(path);
+
+      if (!fileStat.isFile()) {
+        throw new MercyError(
+          "INVALID_INPUT",
+          `Target is not a file: ${action.input.target}`
+        );
+      }
+
+      const data =
+        await readFile(path);
+
+      return {
+        data,
+        metadata: {
+          exists: true,
+          path: action.input.target,
+          size: fileStat.size,
+          mode: fileStat.mode
+        }
+      };
+    } catch (error) {
+      if (
+        error instanceof MercyError
+      ) {
+        throw error;
+      }
+
+      if (
+        this.isNotFoundError(error)
+      ) {
+        return {
+          data: new Uint8Array(),
+          metadata: {
+            exists: false,
+            path: action.input.target
+          }
+        };
+      }
+
+      throw new MercyError(
+        "SNAPSHOT_FAILED",
+        `Failed to snapshot: ${action.input.target}`,
+        { cause: error }
+      );
+    }
+  }
+
+  async execute(
+    action: PreparedAction
+  ): Promise<ActionResult> {
+    const {
+      input,
+      actionId
+    } = action;
+
+    try {
+      switch (input.type) {
+        case "create":
+        case "update": {
+          const content =
             input.metadata?.content;
 
-        if (typeof content !== "string") {
+          if (
+            typeof content !== "string"
+          ) {
             throw new MercyError(
-                "INVALID_INPUT",
-                "Filesystem write requires metadata.content"
+              "INVALID_INPUT",
+              `${input.type} requires metadata.content`
             );
-        }
+          }
 
-        const path =
-            this.resolveTarget(input.target);
+          const path =
+            this.resolveTarget(
+              input.target
+            );
 
-        await mkdir(dirname(path), {
-            recursive: true
-        });
-
-        await writeFile(
+          await writeFile(
             path,
             content,
             "utf8"
-        );
+          );
 
-        const data =
+          const data =
             await readFile(path);
 
-        const afterHash =
+          const afterHash =
             await sha256(data);
 
-        return {
-            actionId: action.actionId,
+          return {
+            actionId,
             success: true,
+            afterHash,
             result: {
-                path: input.target,
-                size: data.byteLength,
-                afterHash
+              path: input.target,
+              size: data.byteLength
             }
-        };
-    }
+          };
+        }
 
-    private async delete(
-        action: PreparedAction
-    ): Promise<ActionResult> {
-        const path =
+        case "delete": {
+          const path =
             this.resolveTarget(
-                action.input.target
+              input.target
             );
 
-        await rm(path, {
-            force: true
-        });
+          await rm(path);
 
-        return {
-            actionId: action.actionId,
+          return {
+            actionId,
             success: true,
             result: {
-                path: action.input.target
+              path: input.target
             }
-        };
-    }
+          };
+        }
 
-    private async renameOrMove(
-        action: PreparedAction
-    ): Promise<ActionResult> {
-        const input = action.input;
-
-        const destination =
+        case "rename":
+        case "move": {
+          const destination =
             input.metadata?.destination;
 
-        if (typeof destination !== "string") {
+          if (
+            typeof destination !== "string"
+          ) {
             throw new MercyError(
-                "INVALID_INPUT",
-                "Filesystem rename/move requires metadata.destination"
+              "INVALID_INPUT",
+              `${input.type} requires metadata.destination`
             );
-        }
+          }
 
-        const source =
-            this.resolveTarget(input.target);
+          const sourcePath =
+            this.resolveTarget(
+              input.target
+            );
 
-        const target =
-            this.resolveTarget(destination);
+          const destinationPath =
+            this.resolveTarget(
+              destination
+            );
 
-        await mkdir(dirname(target), {
-            recursive: true
-        });
+          await mkdirParent(
+            destinationPath
+          );
 
-        await rename(source, target);
+          await rename(
+            sourcePath,
+            destinationPath
+          );
 
-        const data =
-            await readFile(target);
+          const data =
+            await readFile(
+              destinationPath
+            );
 
-        const afterHash =
+          const afterHash =
             await sha256(data);
 
-        return {
-            actionId: action.actionId,
+          return {
+            actionId,
             success: true,
+            afterHash,
             result: {
-                source: input.target,
-                destination,
-                afterHash
+              source: input.target,
+              destination
             }
+          };
+        }
+
+        default:
+          throw new MercyError(
+            "INVALID_INPUT",
+            `Unsupported filesystem action: ${input.type}`
+          );
+      }
+    } catch (error) {
+      if (
+        error instanceof MercyError
+      ) {
+        throw error;
+      }
+
+      throw new MercyError(
+        "ACTION_FAILED",
+        `Filesystem action failed: ${input.target}`,
+        { cause: error }
+      );
+    }
+  }
+
+  async undo(
+    action: Action,
+    snapshot: Snapshot,
+    data: Uint8Array
+  ): Promise<UndoResult> {
+    const verification =
+      await this.verify(action);
+
+    if (verification.conflict) {
+      return {
+        actionId: action.id,
+        success: false,
+        conflict: true,
+        ...(verification.reason
+          ? {
+              error:
+                verification.reason
+            }
+          : {})
+      };
+    }
+
+    const metadata =
+      snapshot.metadata;
+
+    const exists =
+      metadata?.exists === true;
+
+    const originalPath =
+      typeof metadata?.path === "string"
+        ? metadata.path
+        : action.target;
+
+    const path =
+      this.resolveTarget(
+        originalPath
+      );
+
+    try {
+      if (!exists) {
+        await rm(path, {
+          force: true
+        });
+      } else {
+        await mkdirParent(path);
+
+        await writeFile(
+          path,
+          data
+        );
+
+        const mode =
+          metadata?.mode;
+
+        if (
+          typeof mode === "number"
+        ) {
+          await chmod(
+            path,
+            mode
+          );
+        }
+      }
+
+      return {
+        actionId: action.id,
+        success: true,
+        conflict: false
+      };
+    } catch (error) {
+      return {
+        actionId: action.id,
+        success: false,
+        conflict: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error)
+      };
+    }
+  }
+
+  async verify(
+    action: Action
+  ) {
+    if (!action.afterHash) {
+      return {
+        valid: true,
+        conflict: false
+      };
+    }
+
+    const path =
+      this.resolveTarget(
+        action.target
+      );
+
+    try {
+      const data =
+        await readFile(path);
+
+      const currentHash =
+        await sha256(data);
+
+      if (
+        currentHash !==
+        action.afterHash
+      ) {
+        return {
+          valid: false,
+          conflict: true,
+          reason:
+            "Resource changed after the action completed."
         };
+      }
+
+      return {
+        valid: true,
+        conflict: false
+      };
+    } catch (error) {
+      if (
+        this.isNotFoundError(error)
+      ) {
+        return {
+          valid: false,
+          conflict: true,
+          reason:
+            "Resource no longer exists."
+        };
+      }
+
+      throw error;
+    }
+  }
+
+  private resolveTarget(
+    target: string
+  ): string {
+    if (isAbsolute(target)) {
+      throw new MercyError(
+        "INVALID_INPUT",
+        "Filesystem target must be relative"
+      );
     }
 
-    private resolveTarget(
-        target: string
-    ): string {
-        if (isAbsolute(target)) {
-            throw new MercyError(
-                "INVALID_INPUT",
-                "Filesystem target must be relative"
-            );
-        }
+    const root =
+      resolve(this.rootDirectory);
 
-        const resolved =
-            resolve(
-                this.rootDirectory,
-                target
-            );
+    const resolved =
+      resolve(root, target);
 
-        const relativePath =
-            relative(
-                this.rootDirectory,
-                resolved
-            );
+    const relativePath =
+      relative(
+        root,
+        resolved
+      );
 
-        if (
-            relativePath === "" ||
-            relativePath.startsWith("..") ||
-            isAbsolute(relativePath)
-        ) {
-            throw new MercyError(
-                "INVALID_INPUT",
-                "Filesystem target escapes the project directory"
-            );
-        }
-
-        return resolved;
+    if (
+      relativePath === "" ||
+      relativePath.startsWith("..") ||
+      isAbsolute(relativePath)
+    ) {
+      throw new MercyError(
+        "INVALID_INPUT",
+        "Filesystem target escapes the root directory"
+      );
     }
 
-    private async exists(
-        path: string
-    ): Promise<boolean> {
-        try {
-            await access(path);
-            return true;
-        } catch {
-            return false;
-        }
-    }
+    return resolved;
+  }
 
-    private getActionId(
-        action: PreparedAction
-    ): string {
-        const actionId =
-            action.metadata?.actionId;
+  private isNotFoundError(
+    error: unknown
+  ): boolean {
+    return (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "ENOENT"
+    );
+  }
+}
 
-        if (
-            typeof actionId !== "string"
-        ) {
-            throw new MercyError(
-                "INVALID_INPUT",
-                "Prepared filesystem action requires metadata.actionId"
-            );
-        }
-
-        return actionId;
-    }
+async function mkdirParent(
+  path: string
+): Promise<void> {
+  await import("node:fs/promises").then(
+    ({ mkdir }) =>
+      mkdir(dirname(path), {
+        recursive: true
+      })
+  );
 }
