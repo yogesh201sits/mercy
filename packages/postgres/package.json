@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@mercy/core": "workspace:*",
+    "@mercy/journal": "workspace:*",
     "@mercy/shared": "workspace:*",
     "@mercy/snapshots": "workspace:*",
     "@prisma/adapter-pg": "^7.0.0",

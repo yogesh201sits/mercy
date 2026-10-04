@@ -27,6 +27,8 @@ model Action {
   afterHash        String?  @map("after_hash")
 
   metadata         Json?
+  result           Json?
+  undoResult       Json?    @map("undo_result")
 
   snapshots        ActionSnapshot[]
 

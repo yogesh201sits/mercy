@@ -44,6 +44,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@mercy/core": "workspace:*",
+        "@mercy/journal": "workspace:*",
         "@mercy/shared": "workspace:*",
         "@mercy/snapshots": "workspace:*",
         "@prisma/adapter-pg": "^7.0.0",
@@ -52,6 +53,15 @@
       },
       "devDependencies": {
         "prisma": "^7.0.0",
+      },
+    },
+    "packages/runtime": {
+      "name": "@mercy/runtime",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mercy/core": "workspace:*",
+        "@mercy/journal": "workspace:*",
+        "@mercy/shared": "workspace:*",
       },
     },
     "packages/shared": {
@@ -102,6 +112,8 @@
     "@mercy/journal": ["@mercy/journal@workspace:packages/journal"],
 
     "@mercy/postgres": ["@mercy/postgres@workspace:packages/postgres"],
+
+    "@mercy/runtime": ["@mercy/runtime@workspace:packages/runtime"],
 
     "@mercy/shared": ["@mercy/shared@workspace:packages/shared"],
 

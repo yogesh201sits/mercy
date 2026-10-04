@@ -617,7 +617,9 @@ export const ActionScalarFieldEnum = {
   completedAt: 'completedAt',
   beforeSnapshotId: 'beforeSnapshotId',
   afterHash: 'afterHash',
-  metadata: 'metadata'
+  metadata: 'metadata',
+  result: 'result',
+  undoResult: 'undoResult'
 } as const
 
 export type ActionScalarFieldEnum = (typeof ActionScalarFieldEnum)[keyof typeof ActionScalarFieldEnum]

@@ -65,6 +65,8 @@ export type ActionCountAggregateOutputType = {
   beforeSnapshotId: number
   afterHash: number
   metadata: number
+  result: number
+  undoResult: number
   _all: number
 }
 
@@ -110,6 +112,8 @@ export type ActionCountAggregateInputType = {
   beforeSnapshotId?: true
   afterHash?: true
   metadata?: true
+  result?: true
+  undoResult?: true
   _all?: true
 }
 
@@ -198,6 +202,8 @@ export type ActionGroupByOutputType = {
   beforeSnapshotId: string | null
   afterHash: string | null
   metadata: runtime.JsonValue | null
+  result: runtime.JsonValue | null
+  undoResult: runtime.JsonValue | null
   _count: ActionCountAggregateOutputType | null
   _min: ActionMinAggregateOutputType | null
   _max: ActionMaxAggregateOutputType | null
@@ -234,6 +240,8 @@ export type ActionWhereInput = {
   beforeSnapshotId?: Prisma.StringNullableFilter<"Action"> | string | null
   afterHash?: Prisma.StringNullableFilter<"Action"> | string | null
   metadata?: Prisma.JsonNullableFilter<"Action">
+  result?: Prisma.JsonNullableFilter<"Action">
+  undoResult?: Prisma.JsonNullableFilter<"Action">
   snapshots?: Prisma.ActionSnapshotListRelationFilter
 }
 
@@ -250,6 +258,8 @@ export type ActionOrderByWithRelationInput = {
   beforeSnapshotId?: Prisma.SortOrderInput | Prisma.SortOrder
   afterHash?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
+  result?: Prisma.SortOrderInput | Prisma.SortOrder
+  undoResult?: Prisma.SortOrderInput | Prisma.SortOrder
   snapshots?: Prisma.ActionSnapshotOrderByRelationAggregateInput
 }
 
@@ -269,6 +279,8 @@ export type ActionWhereUniqueInput = Prisma.AtLeast<{
   beforeSnapshotId?: Prisma.StringNullableFilter<"Action"> | string | null
   afterHash?: Prisma.StringNullableFilter<"Action"> | string | null
   metadata?: Prisma.JsonNullableFilter<"Action">
+  result?: Prisma.JsonNullableFilter<"Action">
+  undoResult?: Prisma.JsonNullableFilter<"Action">
   snapshots?: Prisma.ActionSnapshotListRelationFilter
 }, "id">
 
@@ -285,6 +297,8 @@ export type ActionOrderByWithAggregationInput = {
   beforeSnapshotId?: Prisma.SortOrderInput | Prisma.SortOrder
   afterHash?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
+  result?: Prisma.SortOrderInput | Prisma.SortOrder
+  undoResult?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.ActionCountOrderByAggregateInput
   _max?: Prisma.ActionMaxOrderByAggregateInput
   _min?: Prisma.ActionMinOrderByAggregateInput
@@ -306,6 +320,8 @@ export type ActionScalarWhereWithAggregatesInput = {
   beforeSnapshotId?: Prisma.StringNullableWithAggregatesFilter<"Action"> | string | null
   afterHash?: Prisma.StringNullableWithAggregatesFilter<"Action"> | string | null
   metadata?: Prisma.JsonNullableWithAggregatesFilter<"Action">
+  result?: Prisma.JsonNullableWithAggregatesFilter<"Action">
+  undoResult?: Prisma.JsonNullableWithAggregatesFilter<"Action">
 }
 
 export type ActionCreateInput = {
@@ -321,6 +337,8 @@ export type ActionCreateInput = {
   beforeSnapshotId?: string | null
   afterHash?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   snapshots?: Prisma.ActionSnapshotCreateNestedManyWithoutActionInput
 }
 
@@ -337,6 +355,8 @@ export type ActionUncheckedCreateInput = {
   beforeSnapshotId?: string | null
   afterHash?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   snapshots?: Prisma.ActionSnapshotUncheckedCreateNestedManyWithoutActionInput
 }
 
@@ -353,6 +373,8 @@ export type ActionUpdateInput = {
   beforeSnapshotId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   afterHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   snapshots?: Prisma.ActionSnapshotUpdateManyWithoutActionNestedInput
 }
 
@@ -369,6 +391,8 @@ export type ActionUncheckedUpdateInput = {
   beforeSnapshotId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   afterHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   snapshots?: Prisma.ActionSnapshotUncheckedUpdateManyWithoutActionNestedInput
 }
 
@@ -385,6 +409,8 @@ export type ActionCreateManyInput = {
   beforeSnapshotId?: string | null
   afterHash?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ActionUpdateManyMutationInput = {
@@ -400,6 +426,8 @@ export type ActionUpdateManyMutationInput = {
   beforeSnapshotId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   afterHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ActionUncheckedUpdateManyInput = {
@@ -415,6 +443,8 @@ export type ActionUncheckedUpdateManyInput = {
   beforeSnapshotId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   afterHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ActionCountOrderByAggregateInput = {
@@ -430,6 +460,8 @@ export type ActionCountOrderByAggregateInput = {
   beforeSnapshotId?: Prisma.SortOrder
   afterHash?: Prisma.SortOrder
   metadata?: Prisma.SortOrder
+  result?: Prisma.SortOrder
+  undoResult?: Prisma.SortOrder
 }
 
 export type ActionMaxOrderByAggregateInput = {
@@ -508,6 +540,8 @@ export type ActionCreateWithoutSnapshotsInput = {
   beforeSnapshotId?: string | null
   afterHash?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ActionUncheckedCreateWithoutSnapshotsInput = {
@@ -523,6 +557,8 @@ export type ActionUncheckedCreateWithoutSnapshotsInput = {
   beforeSnapshotId?: string | null
   afterHash?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ActionCreateOrConnectWithoutSnapshotsInput = {
@@ -554,6 +590,8 @@ export type ActionUpdateWithoutSnapshotsInput = {
   beforeSnapshotId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   afterHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ActionUncheckedUpdateWithoutSnapshotsInput = {
@@ -569,6 +607,8 @@ export type ActionUncheckedUpdateWithoutSnapshotsInput = {
   beforeSnapshotId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   afterHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 
@@ -615,6 +655,8 @@ export type ActionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   beforeSnapshotId?: boolean
   afterHash?: boolean
   metadata?: boolean
+  result?: boolean
+  undoResult?: boolean
   snapshots?: boolean | Prisma.Action$snapshotsArgs<ExtArgs>
   _count?: boolean | Prisma.ActionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["action"]>
@@ -632,6 +674,8 @@ export type ActionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   beforeSnapshotId?: boolean
   afterHash?: boolean
   metadata?: boolean
+  result?: boolean
+  undoResult?: boolean
 }, ExtArgs["result"]["action"]>
 
 export type ActionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -647,6 +691,8 @@ export type ActionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   beforeSnapshotId?: boolean
   afterHash?: boolean
   metadata?: boolean
+  result?: boolean
+  undoResult?: boolean
 }, ExtArgs["result"]["action"]>
 
 export type ActionSelectScalar = {
@@ -662,9 +708,11 @@ export type ActionSelectScalar = {
   beforeSnapshotId?: boolean
   afterHash?: boolean
   metadata?: boolean
+  result?: boolean
+  undoResult?: boolean
 }
 
-export type ActionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "projectId" | "type" | "target" | "status" | "undoStrategy" | "createdAt" | "startedAt" | "completedAt" | "beforeSnapshotId" | "afterHash" | "metadata", ExtArgs["result"]["action"]>
+export type ActionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "projectId" | "type" | "target" | "status" | "undoStrategy" | "createdAt" | "startedAt" | "completedAt" | "beforeSnapshotId" | "afterHash" | "metadata" | "result" | "undoResult", ExtArgs["result"]["action"]>
 export type ActionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   snapshots?: boolean | Prisma.Action$snapshotsArgs<ExtArgs>
   _count?: boolean | Prisma.ActionCountOutputTypeDefaultArgs<ExtArgs>
@@ -690,6 +738,8 @@ export type $ActionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     beforeSnapshotId: string | null
     afterHash: string | null
     metadata: runtime.JsonValue | null
+    result: runtime.JsonValue | null
+    undoResult: runtime.JsonValue | null
   }, ExtArgs["result"]["action"]>
   composites: {}
 }
@@ -1126,6 +1176,8 @@ export interface ActionFieldRefs {
   readonly beforeSnapshotId: Prisma.FieldRef<"Action", 'String'>
   readonly afterHash: Prisma.FieldRef<"Action", 'String'>
   readonly metadata: Prisma.FieldRef<"Action", 'Json'>
+  readonly result: Prisma.FieldRef<"Action", 'Json'>
+  readonly undoResult: Prisma.FieldRef<"Action", 'Json'>
 }
     
 
