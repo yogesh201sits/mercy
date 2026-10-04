@@ -6,6 +6,7 @@ import type {
   PrismaClient
 } from "../../generated/prisma/client";
 
+import { mapPrismaOperation } from "../errors";
 import { toPrismaJson } from "../json";
 
 export class PostgresSnapshotRepository {
@@ -57,11 +58,14 @@ export class PostgresSnapshotRepository {
   async delete(
     snapshotId: string
   ): Promise<void> {
-    await this.prisma.actionSnapshot.delete({
-      where: {
-        id: snapshotId
-      }
-    });
+    await mapPrismaOperation(
+      () => this.prisma.actionSnapshot.delete({
+        where: {
+          id: snapshotId
+        }
+      }),
+      "snapshot"
+    );
   }
 
   private toDomain(

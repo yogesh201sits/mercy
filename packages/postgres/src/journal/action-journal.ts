@@ -1,6 +1,5 @@
 import type {
   Action,
-  ActionInput,
   ActionResult,
   UndoResult
 } from "@mercy/core";
@@ -9,9 +8,9 @@ import type {
   CreateJournalEntry,
   JournalEntry
 } from "@mercy/journal";
-import { MercyError } from "@mercy/shared";
 
 import type { PrismaClient } from "../../generated/prisma/client";
+import { mapPrismaOperation } from "../errors";
 import { toPrismaJson } from "../json";
 
 export class PostgresActionJournal
@@ -51,15 +50,17 @@ export class PostgresActionJournal
     actionId: string,
     snapshotId: string
   ): Promise<JournalEntry> {
-    const action =
-      await this.prisma.action.update({
+    const action = await mapPrismaOperation(
+      () => this.prisma.action.update({
         where: {
           id: actionId
         },
         data: {
           beforeSnapshotId: snapshotId
         }
-      });
+      }),
+      "action"
+    );
 
     return this.toDomain(action);
   }
@@ -67,8 +68,8 @@ export class PostgresActionJournal
   async markRunning(
     actionId: string
   ): Promise<JournalEntry> {
-    const action =
-      await this.prisma.action.update({
+    const action = await mapPrismaOperation(
+      () => this.prisma.action.update({
         where: {
           id: actionId
         },
@@ -76,7 +77,9 @@ export class PostgresActionJournal
           status: "running",
           startedAt: new Date()
         }
-      });
+      }),
+      "action"
+    );
 
     return this.toDomain(action);
   }
@@ -86,8 +89,8 @@ export class PostgresActionJournal
     result: ActionResult,
     afterHash?: string
   ): Promise<JournalEntry> {
-    const action =
-      await this.prisma.action.update({
+    const action = await mapPrismaOperation(
+      () => this.prisma.action.update({
         where: {
           id: actionId
         },
@@ -102,7 +105,9 @@ export class PostgresActionJournal
               }
             : {})
         }
-      });
+      }),
+      "action"
+    );
 
     return this.toDomain(action);
   }
@@ -117,8 +122,8 @@ export class PostgresActionJournal
       error
     };
 
-    const action =
-      await this.prisma.action.update({
+    const action = await mapPrismaOperation(
+      () => this.prisma.action.update({
         where: {
           id: actionId
         },
@@ -127,7 +132,9 @@ export class PostgresActionJournal
           completedAt: new Date(),
           result: toPrismaJson(result)
         }
-      });
+      }),
+      "action"
+    );
 
     return this.toDomain(action);
   }
@@ -135,15 +142,17 @@ export class PostgresActionJournal
   async markUndoing(
     actionId: string
   ): Promise<JournalEntry> {
-    const action =
-      await this.prisma.action.update({
+    const action = await mapPrismaOperation(
+      () => this.prisma.action.update({
         where: {
           id: actionId
         },
         data: {
           status: "undoing"
         }
-      });
+      }),
+      "action"
+    );
 
     return this.toDomain(action);
   }
@@ -152,8 +161,8 @@ export class PostgresActionJournal
     actionId: string,
     result: UndoResult
   ): Promise<JournalEntry> {
-    const action =
-      await this.prisma.action.update({
+    const action = await mapPrismaOperation(
+      () => this.prisma.action.update({
         where: {
           id: actionId
         },
@@ -161,7 +170,9 @@ export class PostgresActionJournal
           status: "undone",
           undoResult: toPrismaJson(result)
         }
-      });
+      }),
+      "action"
+    );
 
     return this.toDomain(action);
   }
@@ -177,8 +188,8 @@ export class PostgresActionJournal
       error
     };
 
-    const action =
-      await this.prisma.action.update({
+    const action = await mapPrismaOperation(
+      () => this.prisma.action.update({
         where: {
           id: actionId
         },
@@ -186,7 +197,9 @@ export class PostgresActionJournal
           status: "undo_failed",
           undoResult: toPrismaJson(result)
         }
-      });
+      }),
+      "action"
+    );
 
     return this.toDomain(action);
   }

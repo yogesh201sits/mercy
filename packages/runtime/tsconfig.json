@@ -3,5 +3,5 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "../../tests/action-store.test.ts"]
+  "include": ["src/**/*.ts"]
 }
