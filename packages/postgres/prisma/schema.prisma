@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Action {
+  id               String   @id
+  projectId        String   @map("project_id")
+
+  type             String
+  target           String
+  status           String
+  undoStrategy     String   @map("undo_strategy")
+
+  createdAt        DateTime @default(now()) @map("created_at")
+  startedAt        DateTime? @map("started_at")
+  completedAt      DateTime? @map("completed_at")
+
+  beforeSnapshotId String?  @map("before_snapshot_id")
+  afterHash        String?  @map("after_hash")
+
+  metadata         Json?
+
+  snapshots        ActionSnapshot[]
+
+  @@index([projectId])
+  @@index([projectId, createdAt])
+  @@index([status])
+  @@map("actions")
+}
+
+model ActionSnapshot {
+  id         String   @id
+  actionId   String   @map("action_id")
+
+  storageKey String   @map("storage_key")
+  checksum   String
+  size       Int
+
+  metadata   Json?
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  action Action @relation(fields: [actionId], references: [id], onDelete: Cascade)
+
+  @@index([actionId])
+  @@map("action_snapshots")
+}
