@@ -31,4 +31,6 @@ export interface Action {
   readonly afterHash?: string;
 
   readonly undoStrategy: UndoStrategyType;
+
+  readonly metadata?: Readonly<Record<string, unknown>>;
 }

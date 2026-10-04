@@ -1,0 +1,14 @@
+{
+  "name": "@mercy/filesystem",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mercy/core": "workspace:*",
+    "@mercy/shared": "workspace:*",
+    "@mercy/snapshots": "workspace:*"
+  }
+}

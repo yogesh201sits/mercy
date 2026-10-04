@@ -7,6 +7,9 @@
     "@mercy/shared": "workspace:*"
   },
   "exports": {
-    "./": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
   }
 }
