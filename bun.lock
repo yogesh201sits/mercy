@@ -79,6 +79,15 @@
         "@mercy/shared": "workspace:*",
       },
     },
+    "packages/undo": {
+      "name": "@mercy/undo",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mercy/core": "workspace:*",
+        "@mercy/journal": "workspace:*",
+        "@mercy/shared": "workspace:*",
+      },
+    },
   },
   "packages": {
     "@biomejs/biome": ["@biomejs/biome@2.5.15", "", { "optionalDependencies": { "@biomejs/cli-darwin-arm64": "2.5.15", "@biomejs/cli-darwin-x64": "2.5.15", "@biomejs/cli-linux-arm64": "2.5.15", "@biomejs/cli-linux-arm64-musl": "2.5.15", "@biomejs/cli-linux-x64": "2.5.15", "@biomejs/cli-linux-x64-musl": "2.5.15", "@biomejs/cli-win32-arm64": "2.5.15", "@biomejs/cli-win32-x64": "2.5.15" }, "bin": { "biome": "bin/biome" } }, "sha512-WZTW4slm/pdkh92K6t/3aEN++44JD1PQ7squ7RCMLI1flHGl43DVOIGXvCjHiZgBMO1V4uYxoFNtqrIA4qGuIQ=="],
@@ -118,6 +127,8 @@
     "@mercy/shared": ["@mercy/shared@workspace:packages/shared"],
 
     "@mercy/snapshots": ["@mercy/snapshots@workspace:packages/snapshots"],
+
+    "@mercy/undo": ["@mercy/undo@workspace:packages/undo"],
 
     "@prisma/adapter-pg": ["@prisma/adapter-pg@7.10.0", "", { "dependencies": { "@prisma/driver-adapter-utils": "7.10.0", "@types/pg": "^8.16.0", "pg": "^8.16.3", "postgres-array": "3.0.4" } }, "sha512-N7nwSor0HO1Kz6xBv0TPAjAPysKK0fac6p4fVN3ensLOuzc/83Fgmln5k92eK/cvzqdkSR/2kkAqlbcdwVrwpw=="],
 

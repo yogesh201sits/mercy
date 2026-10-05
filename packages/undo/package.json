@@ -1,0 +1,14 @@
+{
+  "name": "@mercy/undo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mercy/core": "workspace:*",
+    "@mercy/journal": "workspace:*",
+    "@mercy/shared": "workspace:*"
+  }
+}
