@@ -9,6 +9,7 @@
   "dependencies": {
     "@mercy/core": "workspace:*",
     "@mercy/journal": "workspace:*",
-    "@mercy/shared": "workspace:*"
+    "@mercy/shared": "workspace:*",
+    "@mercy/undo": "workspace:*"
   }
 }

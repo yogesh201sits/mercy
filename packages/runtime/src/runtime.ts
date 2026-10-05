@@ -8,6 +8,7 @@ import type {
 import type {
   ActionJournal
 } from "@mercy/journal";
+import { UndoEngine } from "@mercy/undo";
 import {
   MercyError,
   createId
@@ -26,6 +27,7 @@ export class MercyRuntime {
   private readonly journal: ActionJournal;
   private readonly snapshots: SnapshotStore;
   private readonly adapters: readonly ActionAdapter[];
+  private readonly undoEngine: UndoEngine;
 
   constructor(
     options: MercyRuntimeOptions
@@ -35,6 +37,11 @@ export class MercyRuntime {
       options.snapshots;
     this.adapters =
       options.adapters;
+    this.undoEngine = new UndoEngine({
+      journal: this.journal,
+      snapshots: this.snapshots,
+      adapters: this.adapters
+    });
   }
 
   async execute(
@@ -128,125 +135,8 @@ export class MercyRuntime {
     }
   }
 
-  async undo(
-    actionId: string
-  ): Promise<UndoResult> {
-    const action =
-      await this.journal.get(
-        actionId
-      );
-
-    if (!action) {
-      throw new MercyError(
-        "ACTION_NOT_FOUND",
-        `Action not found: ${actionId}`
-      );
-    }
-
-    if (action.status === "undone") {
-      return (
-        action.undoResult ?? {
-          actionId,
-          success: true,
-          conflict: false
-        }
-      );
-    }
-
-    if (!action.beforeSnapshotId) {
-      throw new MercyError(
-        "SNAPSHOT_NOT_FOUND",
-        `No snapshot exists for action: ${actionId}`
-      );
-    }
-
-    const adapter =
-      this.findAdapterForAction(
-        action
-      );
-
-    await this.journal.markUndoing(
-      actionId
-    );
-
-    try {
-      const verification =
-        await adapter.verify(action);
-
-      if (verification.conflict) {
-        const result: UndoResult = {
-          actionId,
-          success: false,
-          conflict: true,
-          error:
-            verification.reason ??
-            "Action cannot be undone because the resource changed."
-        };
-
-        await this.journal.markUndoFailed(
-          actionId,
-          result
-        );
-
-        return result;
-
-      }
-
-      const snapshot =
-        await this.snapshots.get(
-          action.beforeSnapshotId
-        );
-
-      if (!snapshot) {
-        throw new MercyError(
-          "SNAPSHOT_NOT_FOUND",
-          `Snapshot not found: ${action.beforeSnapshotId}`
-        );
-      }
-
-      const data =
-        await this.snapshots.read(
-          snapshot.id
-        );
-
-      const result =
-        await adapter.undo(
-          action,
-          snapshot,
-          data
-        );
-      if (!result.success) {
-        await this.journal.markUndoFailed(
-          actionId,
-          result
-        );
-
-        return result;
-      }
-
-      await this.journal.markUndone(
-        actionId,
-        result
-      );
-
-      return result;
-    } catch (error) {
-      const message = this.getErrorMessage(error);
-
-      const result: UndoResult = {
-        actionId,
-        success: false,
-        conflict: false,
-        error: message
-      };
-
-      await this.journal.markUndoFailed(
-        actionId,
-        result
-      );
-
-      throw error;
-    }
+  async undo(actionId: string): Promise<UndoResult> {
+    return this.undoEngine.undo(actionId);
   }
 
   async getAction(
@@ -278,30 +168,6 @@ export class MercyRuntime {
       throw new MercyError(
         "ADAPTER_NOT_FOUND",
         `No adapter can handle action: ${input.type}`
-      );
-    }
-
-    return adapter;
-  }
-
-  private findAdapterForAction(
-    action: Action
-  ): ActionAdapter {
-    const adapter =
-      this.adapters.find(
-        (candidate) =>
-          candidate.canHandle({
-            projectId:
-              action.projectId,
-            type: action.type,
-            target: action.target
-          })
-      );
-
-    if (!adapter) {
-      throw new MercyError(
-        "ADAPTER_NOT_FOUND",
-        `No adapter can handle action: ${action.type}`
       );
     }
 
