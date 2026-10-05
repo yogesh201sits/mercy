@@ -47,7 +47,7 @@ export interface ActionJournal {
 
   markUndoFailed(
     actionId: string,
-    error: string
+    result: UndoResult
   ): Promise<JournalEntry>;
 
   get(actionId: string): Promise<JournalEntry | null>;

@@ -179,29 +179,19 @@ export class PostgresActionJournal
 
   async markUndoFailed(
     actionId: string,
-    error: string
+    result: UndoResult
   ): Promise<JournalEntry> {
-    const result: UndoResult = {
-      actionId,
-      success: false,
-      conflict: false,
-      error
-    };
+    const entry = await this.prisma.action.update({
+      where: {
+        id: actionId
+      },
+      data: {
+        status: "undo_failed",
+        undoResult: toPrismaJson(result)
+      }
+    });
 
-    const action = await mapPrismaOperation(
-      () => this.prisma.action.update({
-        where: {
-          id: actionId
-        },
-        data: {
-          status: "undo_failed",
-          undoResult: toPrismaJson(result)
-        }
-      }),
-      "action"
-    );
-
-    return this.toDomain(action);
+    return this.toDomain(entry);
   }
 
   async get(

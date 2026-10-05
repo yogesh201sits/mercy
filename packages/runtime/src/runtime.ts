@@ -77,9 +77,9 @@ export class MercyRuntime {
           data: captured.data,
           ...(captured.metadata
             ? {
-                metadata:
-                  captured.metadata
-              }
+              metadata:
+                captured.metadata
+            }
             : {})
         });
 
@@ -102,7 +102,7 @@ export class MercyRuntime {
         await this.journal.markFailed(
           actionId,
           result.error ??
-            "Action execution failed"
+          "Action execution failed"
         );
 
         return result;
@@ -178,21 +178,18 @@ export class MercyRuntime {
           actionId,
           success: false,
           conflict: true,
-          ...(verification.reason
-            ? {
-                error:
-                  verification.reason
-              }
-            : {})
+          error:
+            verification.reason ??
+            "Action cannot be undone because the resource changed."
         };
 
         await this.journal.markUndoFailed(
           actionId,
-          verification.reason ??
-            "Action cannot be undone because the resource changed."
+          result
         );
 
         return result;
+
       }
 
       const snapshot =
@@ -218,12 +215,10 @@ export class MercyRuntime {
           snapshot,
           data
         );
-
       if (!result.success) {
         await this.journal.markUndoFailed(
           actionId,
-          result.error ??
-            "Undo failed"
+          result
         );
 
         return result;
@@ -236,12 +231,18 @@ export class MercyRuntime {
 
       return result;
     } catch (error) {
-      const message =
-        this.getErrorMessage(error);
+      const message = this.getErrorMessage(error);
+
+      const result: UndoResult = {
+        actionId,
+        success: false,
+        conflict: false,
+        error: message
+      };
 
       await this.journal.markUndoFailed(
         actionId,
-        message
+        result
       );
 
       throw error;

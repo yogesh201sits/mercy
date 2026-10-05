@@ -67,8 +67,7 @@ export class UndoEngine {
 
         await this.journal.markUndoFailed(
           actionId,
-          verification.reason ??
-            "Action cannot be undone because the resource changed."
+          result
         );
 
         return result;
@@ -96,7 +95,7 @@ export class UndoEngine {
       if (!result.success) {
         await this.journal.markUndoFailed(
           actionId,
-          result.error ?? "Undo failed"
+          result
         );
 
         return result;
@@ -114,9 +113,16 @@ export class UndoEngine {
           ? error.message
           : String(error);
 
+      const failedResult: UndoResult = {
+        actionId,
+        success: false,
+        conflict: false,
+        error: message
+      };
+
       await this.journal.markUndoFailed(
         actionId,
-        message
+        failedResult
       );
 
       throw error;
