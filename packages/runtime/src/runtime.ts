@@ -203,11 +203,12 @@ export class MercyRuntime {
 
     if (
       group.status !== "completed" &&
-      group.status !== "failed"
+      group.status !== "failed" &&
+      group.status !== "undo_failed"
     ) {
       throw new MercyError(
-        "ACTION_FAILED",
-        `Action group cannot be undone in its current state: ${group.status}`
+        "INVALID_INPUT",
+        `Cannot undo action group in status: ${group.status}`
       );
     }
 

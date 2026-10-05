@@ -47,6 +47,16 @@ export { Prisma }
  */
 export type Action = Prisma.ActionModel
 /**
+ * Model ActionGroup
+ * 
+ */
+export type ActionGroup = Prisma.ActionGroupModel
+/**
+ * Model ActionGroupAction
+ * 
+ */
+export type ActionGroupAction = Prisma.ActionGroupActionModel
+/**
  * Model ActionSnapshot
  * 
  */

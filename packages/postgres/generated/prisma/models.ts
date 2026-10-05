@@ -9,5 +9,7 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/Action'
+export type * from './models/ActionGroup'
+export type * from './models/ActionGroupAction'
 export type * from './models/ActionSnapshot'
 export type * from './commonInputTypes'

@@ -441,14 +441,6 @@ export type ActionSnapshotUncheckedUpdateManyWithoutActionNestedInput = {
   deleteMany?: Prisma.ActionSnapshotScalarWhereInput | Prisma.ActionSnapshotScalarWhereInput[]
 }
 
-export type IntFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type ActionSnapshotCreateWithoutActionInput = {
   id: string
   storageKey: string

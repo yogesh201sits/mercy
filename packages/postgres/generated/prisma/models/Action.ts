@@ -243,6 +243,7 @@ export type ActionWhereInput = {
   result?: Prisma.JsonNullableFilter<"Action">
   undoResult?: Prisma.JsonNullableFilter<"Action">
   snapshots?: Prisma.ActionSnapshotListRelationFilter
+  groupMemberships?: Prisma.ActionGroupActionListRelationFilter
 }
 
 export type ActionOrderByWithRelationInput = {
@@ -261,6 +262,7 @@ export type ActionOrderByWithRelationInput = {
   result?: Prisma.SortOrderInput | Prisma.SortOrder
   undoResult?: Prisma.SortOrderInput | Prisma.SortOrder
   snapshots?: Prisma.ActionSnapshotOrderByRelationAggregateInput
+  groupMemberships?: Prisma.ActionGroupActionOrderByRelationAggregateInput
 }
 
 export type ActionWhereUniqueInput = Prisma.AtLeast<{
@@ -282,6 +284,7 @@ export type ActionWhereUniqueInput = Prisma.AtLeast<{
   result?: Prisma.JsonNullableFilter<"Action">
   undoResult?: Prisma.JsonNullableFilter<"Action">
   snapshots?: Prisma.ActionSnapshotListRelationFilter
+  groupMemberships?: Prisma.ActionGroupActionListRelationFilter
 }, "id">
 
 export type ActionOrderByWithAggregationInput = {
@@ -340,6 +343,7 @@ export type ActionCreateInput = {
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   snapshots?: Prisma.ActionSnapshotCreateNestedManyWithoutActionInput
+  groupMemberships?: Prisma.ActionGroupActionCreateNestedManyWithoutActionInput
 }
 
 export type ActionUncheckedCreateInput = {
@@ -358,6 +362,7 @@ export type ActionUncheckedCreateInput = {
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   snapshots?: Prisma.ActionSnapshotUncheckedCreateNestedManyWithoutActionInput
+  groupMemberships?: Prisma.ActionGroupActionUncheckedCreateNestedManyWithoutActionInput
 }
 
 export type ActionUpdateInput = {
@@ -376,6 +381,7 @@ export type ActionUpdateInput = {
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   snapshots?: Prisma.ActionSnapshotUpdateManyWithoutActionNestedInput
+  groupMemberships?: Prisma.ActionGroupActionUpdateManyWithoutActionNestedInput
 }
 
 export type ActionUncheckedUpdateInput = {
@@ -394,6 +400,7 @@ export type ActionUncheckedUpdateInput = {
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   snapshots?: Prisma.ActionSnapshotUncheckedUpdateManyWithoutActionNestedInput
+  groupMemberships?: Prisma.ActionGroupActionUncheckedUpdateManyWithoutActionNestedInput
 }
 
 export type ActionCreateManyInput = {
@@ -513,6 +520,20 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
+export type ActionCreateNestedOneWithoutGroupMembershipsInput = {
+  create?: Prisma.XOR<Prisma.ActionCreateWithoutGroupMembershipsInput, Prisma.ActionUncheckedCreateWithoutGroupMembershipsInput>
+  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutGroupMembershipsInput
+  connect?: Prisma.ActionWhereUniqueInput
+}
+
+export type ActionUpdateOneRequiredWithoutGroupMembershipsNestedInput = {
+  create?: Prisma.XOR<Prisma.ActionCreateWithoutGroupMembershipsInput, Prisma.ActionUncheckedCreateWithoutGroupMembershipsInput>
+  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutGroupMembershipsInput
+  upsert?: Prisma.ActionUpsertWithoutGroupMembershipsInput
+  connect?: Prisma.ActionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ActionUpdateToOneWithWhereWithoutGroupMembershipsInput, Prisma.ActionUpdateWithoutGroupMembershipsInput>, Prisma.ActionUncheckedUpdateWithoutGroupMembershipsInput>
+}
+
 export type ActionCreateNestedOneWithoutSnapshotsInput = {
   create?: Prisma.XOR<Prisma.ActionCreateWithoutSnapshotsInput, Prisma.ActionUncheckedCreateWithoutSnapshotsInput>
   connectOrCreate?: Prisma.ActionCreateOrConnectWithoutSnapshotsInput
@@ -525,6 +546,94 @@ export type ActionUpdateOneRequiredWithoutSnapshotsNestedInput = {
   upsert?: Prisma.ActionUpsertWithoutSnapshotsInput
   connect?: Prisma.ActionWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.ActionUpdateToOneWithWhereWithoutSnapshotsInput, Prisma.ActionUpdateWithoutSnapshotsInput>, Prisma.ActionUncheckedUpdateWithoutSnapshotsInput>
+}
+
+export type ActionCreateWithoutGroupMembershipsInput = {
+  id: string
+  projectId: string
+  type: string
+  target: string
+  status: string
+  undoStrategy: string
+  createdAt?: Date | string
+  startedAt?: Date | string | null
+  completedAt?: Date | string | null
+  beforeSnapshotId?: string | null
+  afterHash?: string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  snapshots?: Prisma.ActionSnapshotCreateNestedManyWithoutActionInput
+}
+
+export type ActionUncheckedCreateWithoutGroupMembershipsInput = {
+  id: string
+  projectId: string
+  type: string
+  target: string
+  status: string
+  undoStrategy: string
+  createdAt?: Date | string
+  startedAt?: Date | string | null
+  completedAt?: Date | string | null
+  beforeSnapshotId?: string | null
+  afterHash?: string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  snapshots?: Prisma.ActionSnapshotUncheckedCreateNestedManyWithoutActionInput
+}
+
+export type ActionCreateOrConnectWithoutGroupMembershipsInput = {
+  where: Prisma.ActionWhereUniqueInput
+  create: Prisma.XOR<Prisma.ActionCreateWithoutGroupMembershipsInput, Prisma.ActionUncheckedCreateWithoutGroupMembershipsInput>
+}
+
+export type ActionUpsertWithoutGroupMembershipsInput = {
+  update: Prisma.XOR<Prisma.ActionUpdateWithoutGroupMembershipsInput, Prisma.ActionUncheckedUpdateWithoutGroupMembershipsInput>
+  create: Prisma.XOR<Prisma.ActionCreateWithoutGroupMembershipsInput, Prisma.ActionUncheckedCreateWithoutGroupMembershipsInput>
+  where?: Prisma.ActionWhereInput
+}
+
+export type ActionUpdateToOneWithWhereWithoutGroupMembershipsInput = {
+  where?: Prisma.ActionWhereInput
+  data: Prisma.XOR<Prisma.ActionUpdateWithoutGroupMembershipsInput, Prisma.ActionUncheckedUpdateWithoutGroupMembershipsInput>
+}
+
+export type ActionUpdateWithoutGroupMembershipsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  projectId?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  target?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  undoStrategy?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  beforeSnapshotId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  afterHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  snapshots?: Prisma.ActionSnapshotUpdateManyWithoutActionNestedInput
+}
+
+export type ActionUncheckedUpdateWithoutGroupMembershipsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  projectId?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  target?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  undoStrategy?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  beforeSnapshotId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  afterHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  snapshots?: Prisma.ActionSnapshotUncheckedUpdateManyWithoutActionNestedInput
 }
 
 export type ActionCreateWithoutSnapshotsInput = {
@@ -542,6 +651,7 @@ export type ActionCreateWithoutSnapshotsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  groupMemberships?: Prisma.ActionGroupActionCreateNestedManyWithoutActionInput
 }
 
 export type ActionUncheckedCreateWithoutSnapshotsInput = {
@@ -559,6 +669,7 @@ export type ActionUncheckedCreateWithoutSnapshotsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  groupMemberships?: Prisma.ActionGroupActionUncheckedCreateNestedManyWithoutActionInput
 }
 
 export type ActionCreateOrConnectWithoutSnapshotsInput = {
@@ -592,6 +703,7 @@ export type ActionUpdateWithoutSnapshotsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  groupMemberships?: Prisma.ActionGroupActionUpdateManyWithoutActionNestedInput
 }
 
 export type ActionUncheckedUpdateWithoutSnapshotsInput = {
@@ -609,6 +721,7 @@ export type ActionUncheckedUpdateWithoutSnapshotsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  groupMemberships?: Prisma.ActionGroupActionUncheckedUpdateManyWithoutActionNestedInput
 }
 
 
@@ -618,10 +731,12 @@ export type ActionUncheckedUpdateWithoutSnapshotsInput = {
 
 export type ActionCountOutputType = {
   snapshots: number
+  groupMemberships: number
 }
 
 export type ActionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   snapshots?: boolean | ActionCountOutputTypeCountSnapshotsArgs
+  groupMemberships?: boolean | ActionCountOutputTypeCountGroupMembershipsArgs
 }
 
 /**
@@ -641,6 +756,13 @@ export type ActionCountOutputTypeCountSnapshotsArgs<ExtArgs extends runtime.Type
   where?: Prisma.ActionSnapshotWhereInput
 }
 
+/**
+ * ActionCountOutputType without action
+ */
+export type ActionCountOutputTypeCountGroupMembershipsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ActionGroupActionWhereInput
+}
+
 
 export type ActionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -658,6 +780,7 @@ export type ActionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   result?: boolean
   undoResult?: boolean
   snapshots?: boolean | Prisma.Action$snapshotsArgs<ExtArgs>
+  groupMemberships?: boolean | Prisma.Action$groupMembershipsArgs<ExtArgs>
   _count?: boolean | Prisma.ActionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["action"]>
 
@@ -715,6 +838,7 @@ export type ActionSelectScalar = {
 export type ActionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "projectId" | "type" | "target" | "status" | "undoStrategy" | "createdAt" | "startedAt" | "completedAt" | "beforeSnapshotId" | "afterHash" | "metadata" | "result" | "undoResult", ExtArgs["result"]["action"]>
 export type ActionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   snapshots?: boolean | Prisma.Action$snapshotsArgs<ExtArgs>
+  groupMemberships?: boolean | Prisma.Action$groupMembershipsArgs<ExtArgs>
   _count?: boolean | Prisma.ActionCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ActionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -724,6 +848,7 @@ export type $ActionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
   name: "Action"
   objects: {
     snapshots: Prisma.$ActionSnapshotPayload<ExtArgs>[]
+    groupMemberships: Prisma.$ActionGroupActionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1135,6 +1260,7 @@ readonly fields: ActionFieldRefs;
 export interface Prisma__ActionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   snapshots<T extends Prisma.Action$snapshotsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Action$snapshotsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ActionSnapshotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  groupMemberships<T extends Prisma.Action$groupMembershipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Action$groupMembershipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ActionGroupActionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1592,6 +1718,30 @@ export type Action$snapshotsArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.ActionSnapshotScalarFieldEnum | Prisma.ActionSnapshotScalarFieldEnum[]
+}
+
+/**
+ * Action.groupMemberships
+ */
+export type Action$groupMembershipsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ActionGroupAction
+   */
+  select?: Prisma.ActionGroupActionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ActionGroupAction
+   */
+  omit?: Prisma.ActionGroupActionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ActionGroupActionInclude<ExtArgs> | null
+  where?: Prisma.ActionGroupActionWhereInput
+  orderBy?: Prisma.ActionGroupActionOrderByWithRelationInput | Prisma.ActionGroupActionOrderByWithRelationInput[]
+  cursor?: Prisma.ActionGroupActionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ActionGroupActionScalarFieldEnum | Prisma.ActionGroupActionScalarFieldEnum[]
 }
 
 /**
