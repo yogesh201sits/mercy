@@ -1,30 +1,16 @@
-import { Hono } from "hono";
+import { serve } from "bun";
 
-import {
-  createMercyRuntime,
-} from "./runtime";
+import { createApp } from "./app";
 
-import {
-  createActionRoutes,
-} from "./routes/actions";
+const app = createApp();
 
-const app = new Hono();
-
-const services =
-  createMercyRuntime();
-
-app.get("/health", (c) => {
-  return c.json({
-    status: "ok",
-    service: "mercy-api",
-  });
+serve({
+  fetch: app.fetch,
+  port: Number(
+    process.env["PORT"] ?? 3000,
+  ),
 });
 
-app.route(
-  "/",
-  createActionRoutes(
-    services.runtime,
-  ),
+console.log(
+  `Mercy API running on http://localhost:${process.env["PORT"] ?? 3000}`,
 );
-
-export default app;
