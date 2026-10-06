@@ -4,11 +4,23 @@ import {
   test,
 } from "bun:test";
 
-import { createApp } from "./app";
+import type {
+  MercyRuntime,
+} from "@mercy/runtime";
+
+import {
+  createApp,
+} from "./app";
 
 describe("Mercy API", () => {
   test("GET /health", async () => {
-    const app = createApp();
+    const runtime =
+      {} as MercyRuntime;
+
+    const app =
+      createApp({
+        runtime,
+      });
 
     const response =
       await app.request(

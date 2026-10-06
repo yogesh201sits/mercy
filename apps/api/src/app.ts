@@ -3,10 +3,6 @@ import { Hono } from "hono";
 import type { MercyRuntime } from "@mercy/runtime";
 
 import {
-  createMercyRuntime,
-} from "./runtime";
-
-import {
   createActionRoutes,
 } from "./routes/actions";
 
@@ -19,16 +15,9 @@ export interface MercyApiDependencies {
 }
 
 export function createApp(
-  dependencies?: MercyApiDependencies,
+  dependencies: MercyApiDependencies,
 ) {
   const app = new Hono();
-
-  const services =
-    dependencies ??
-    {
-      runtime:
-        createMercyRuntime().runtime,
-    };
 
   app.get("/health", (c) => {
     return c.json({
@@ -40,14 +29,14 @@ export function createApp(
   app.route(
     "/",
     createActionRoutes(
-      services.runtime,
+      dependencies.runtime,
     ),
   );
 
   app.route(
     "/",
     createGroupRoutes(
-      services.runtime,
+      dependencies.runtime,
     ),
   );
 
