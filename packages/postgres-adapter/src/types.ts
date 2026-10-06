@@ -28,10 +28,17 @@ export interface PostgresRowFilter {
 }
 
 export interface PostgresBulkActionMetadata {
-  readonly operation: "delete_rows" | "update_rows";
+  readonly operation:
+    | "delete_rows"
+    | "update_rows";
+
   readonly primaryKey: string;
+
   readonly where: PostgresRowFilter;
-  readonly changes?: Readonly<Record<string, unknown>>;
+
+  readonly changes?: Readonly<
+    Record<string, unknown>
+  >;
 }
 
 export interface PostgresSnapshotState {

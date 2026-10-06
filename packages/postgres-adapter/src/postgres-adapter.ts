@@ -31,6 +31,7 @@ import {
   encodeSnapshot,
   hashValue,
   normalizeTableTarget,
+  quoteIdentifier,
   tableSql,
   validateIdentifier,
 } from "./utils";
@@ -39,6 +40,7 @@ export class PostgresAdapter implements ActionAdapter {
   readonly name = "postgres";
 
   private readonly pool: Pool;
+
   private readonly allowedTables?: ReadonlySet<string>;
 
   constructor(
@@ -59,7 +61,7 @@ export class PostgresAdapter implements ActionAdapter {
     input: ActionInput,
   ): boolean {
     const table =
-      normalizeTableTarget(input!.target!);
+      normalizeTableTarget(input.target);
 
     const tableAllowed =
       !this.allowedTables ||
@@ -75,9 +77,15 @@ export class PostgresAdapter implements ActionAdapter {
     }
 
     if (input.type === "custom") {
+      const bulkMetadata =
+        this.getBulkMetadata(input);
+
       return (
-        input.metadata?.["operation"] ===
-          "delete_rows" &&
+        bulkMetadata !== null &&
+        (
+          bulkMetadata.operation === "delete_rows" ||
+          bulkMetadata.operation === "update_rows"
+        ) &&
         tableAllowed
       );
     }
@@ -109,10 +117,21 @@ export class PostgresAdapter implements ActionAdapter {
         "filter column",
       );
 
+      if (bulkMetadata.changes) {
+        for (const field of Object.keys(
+          bulkMetadata.changes,
+        )) {
+          validateIdentifier(
+            field,
+            "update field",
+          );
+        }
+      }
+
       return {
         actionId:
           typeof input.metadata?.["actionId"] ===
-          "string"
+            "string"
             ? input.metadata["actionId"]
             : crypto.randomUUID(),
 
@@ -122,11 +141,22 @@ export class PostgresAdapter implements ActionAdapter {
 
         metadata: {
           ...input.metadata,
-          operation: "delete_rows",
+
+          operation:
+            bulkMetadata.operation,
+
           primaryKey:
             bulkMetadata.primaryKey,
+
           where:
             bulkMetadata.where,
+
+          ...(bulkMetadata.changes
+            ? {
+                changes:
+                  bulkMetadata.changes,
+              }
+            : {}),
         },
       };
     }
@@ -171,8 +201,11 @@ export class PostgresAdapter implements ActionAdapter {
     return {
       actionId:
         this.getActionId(input),
+
       input,
+
       undoStrategy: "restore",
+
       ...(input.metadata
         ? {
             metadata: input.metadata,
@@ -185,7 +218,9 @@ export class PostgresAdapter implements ActionAdapter {
     action: PreparedAction,
   ): Promise<CapturedState> {
     const bulkMetadata =
-      this.getBulkMetadata(action);
+      this.getBulkMetadata(
+        action.input,
+      );
 
     if (bulkMetadata) {
       const where =
@@ -211,22 +246,29 @@ export class PostgresAdapter implements ActionAdapter {
       const state:
         PostgresRowsSnapshotState = {
         kind: "postgres-rows",
+
         table:
           normalizeTableTarget(
             action.input.target,
           ),
+
         primaryKey:
           bulkMetadata.primaryKey,
+
         rows,
       };
 
       return {
         data: encodeSnapshot(state),
+
         metadata: {
           kind: state.kind,
+
           table: state.table,
+
           primaryKey:
             state.primaryKey,
+
           rowCount:
             state.rows.length,
         },
@@ -248,16 +290,21 @@ export class PostgresAdapter implements ActionAdapter {
     const state:
       PostgresSnapshotState = {
       kind: "postgres-row",
+
       table:
         normalizeTableTarget(
           action.input.target,
         ),
+
       primaryKey:
         metadata.primaryKey,
+
       primaryKeyValue:
         metadata.primaryKeyValue,
+
       existed:
         row !== null,
+
       ...(row !== null
         ? {
             data: row,
@@ -267,13 +314,18 @@ export class PostgresAdapter implements ActionAdapter {
 
     return {
       data: encodeSnapshot(state),
+
       metadata: {
         kind: state.kind,
+
         table: state.table,
+
         primaryKey:
           state.primaryKey,
+
         primaryKeyValue:
           state.primaryKeyValue,
+
         existed:
           state.existed,
       },
@@ -285,10 +337,25 @@ export class PostgresAdapter implements ActionAdapter {
   ): Promise<ActionResult> {
     try {
       const bulkMetadata =
-        this.getBulkMetadata(action);
+        this.getBulkMetadata(
+          action.input,
+        );
 
-      if (bulkMetadata) {
+      if (
+        bulkMetadata?.operation ===
+        "delete_rows"
+      ) {
         return await this.executeDeleteRows(
+          action,
+          bulkMetadata,
+        );
+      }
+
+      if (
+        bulkMetadata?.operation ===
+        "update_rows"
+      ) {
+        return await this.executeUpdateRows(
           action,
           bulkMetadata,
         );
@@ -342,16 +409,21 @@ export class PostgresAdapter implements ActionAdapter {
       const state = {
         kind:
           "postgres-row-current",
+
         table:
           normalizeTableTarget(
             action.input.target,
           ),
+
         primaryKey:
           metadata.primaryKey,
+
         primaryKeyValue:
           metadata.primaryKeyValue,
+
         existed:
           afterRow !== null,
+
         ...(afterRow !== null
           ? {
               data: afterRow,
@@ -362,8 +434,11 @@ export class PostgresAdapter implements ActionAdapter {
       return {
         actionId:
           action.actionId,
+
         success: true,
+
         result: row,
+
         afterHash:
           hashValue(state),
       };
@@ -372,7 +447,9 @@ export class PostgresAdapter implements ActionAdapter {
         return {
           actionId:
             action.actionId,
+
           success: false,
+
           error:
             error.message,
         };
@@ -381,13 +458,123 @@ export class PostgresAdapter implements ActionAdapter {
       return {
         actionId:
           action.actionId,
+
         success: false,
+
         error:
           error instanceof Error
             ? error.message
             : String(error),
       };
     }
+  }
+
+  private async undoUpdateRows(
+    action: Action,
+    state: PostgresRowsSnapshotState,
+  ): Promise<UndoResult> {
+    const verification =
+      await this.verify(action);
+
+    if (!verification.valid) {
+      return {
+        actionId:
+          action.id,
+
+        success: false,
+
+        conflict:
+          verification.conflict,
+
+        error:
+          verification.reason ??
+          "PostgreSQL rows have changed since the action completed",
+      };
+    }
+
+    const table =
+      normalizeTableTarget(
+        state.table,
+      );
+
+    for (const row of state.rows) {
+      const primaryKeyValue =
+        row[state.primaryKey];
+
+      if (
+        primaryKeyValue === undefined
+      ) {
+        return {
+          actionId:
+            action.id,
+
+          success: false,
+
+          conflict: false,
+
+          error:
+            `Snapshot row is missing primary key "${state.primaryKey}"`,
+        };
+      }
+
+      const entries =
+        Object.entries(row);
+
+      const setClauses: string[] = [];
+
+      const values: unknown[] = [];
+
+      for (
+        const [field, value]
+        of entries
+      ) {
+        if (
+          field ===
+          state.primaryKey
+        ) {
+          continue;
+        }
+
+        validateIdentifier(
+          field,
+          "restore field",
+        );
+
+        setClauses.push(
+          `${quoteIdentifier(field)} = $${values.length + 1}`,
+        );
+
+        values.push(value);
+      }
+
+      if (
+        setClauses.length === 0
+      ) {
+        continue;
+      }
+
+      values.push(
+        primaryKeyValue,
+      );
+
+      await this.pool.query(
+        `
+        UPDATE ${quoteIdentifier(table)}
+        SET ${setClauses.join(", ")}
+        WHERE ${quoteIdentifier(state.primaryKey)} = $${values.length}
+        `,
+        values,
+      );
+    }
+
+    return {
+      actionId:
+        action.id,
+
+      success: true,
+
+      conflict: false,
+    };
   }
 
   async undo(
@@ -406,6 +593,21 @@ export class PostgresAdapter implements ActionAdapter {
         state.kind ===
         "postgres-rows"
       ) {
+        const metadata =
+          this.getBulkMetadataFromAction(
+            action,
+          );
+
+        if (
+          metadata?.operation ===
+          "update_rows"
+        ) {
+          return await this.undoUpdateRows(
+            action,
+            state,
+          );
+        }
+
         return await this.undoDeleteRows(
           action,
           state,
@@ -415,12 +617,17 @@ export class PostgresAdapter implements ActionAdapter {
       const verification =
         await this.verify(action);
 
-      if (verification.conflict) {
+      if (
+        verification.conflict
+      ) {
         return {
           actionId:
             action.id,
+
           success: false,
+
           conflict: true,
+
           error:
             verification.reason ??
             "PostgreSQL row changed after the action",
@@ -434,8 +641,11 @@ export class PostgresAdapter implements ActionAdapter {
         return {
           actionId:
             action.id,
+
           success: false,
+
           conflict: false,
+
           error:
             "Unsupported PostgreSQL snapshot kind",
         };
@@ -478,15 +688,20 @@ export class PostgresAdapter implements ActionAdapter {
       return {
         actionId:
           action.id,
+
         success: true,
+
         conflict: false,
       };
     } catch (error) {
       return {
         actionId:
           action.id,
+
         success: false,
+
         conflict: false,
+
         error:
           error instanceof Error
             ? error.message
@@ -501,7 +716,9 @@ export class PostgresAdapter implements ActionAdapter {
     if (!action.afterHash) {
       return {
         valid: false,
+
         conflict: false,
+
         reason:
           "Action does not contain an after-action hash",
       };
@@ -514,7 +731,7 @@ export class PostgresAdapter implements ActionAdapter {
         );
 
       if (bulkMetadata) {
-        return await this.verifyDeleteRows(
+        return await this.verifyBulkRows(
           action,
           bulkMetadata,
         );
@@ -535,16 +752,21 @@ export class PostgresAdapter implements ActionAdapter {
       const currentState = {
         kind:
           "postgres-row-current",
+
         table:
           normalizeTableTarget(
             action.target,
           ),
+
         primaryKey:
           metadata.primaryKey,
+
         primaryKeyValue:
           metadata.primaryKeyValue,
+
         existed:
           row !== null,
+
         ...(row !== null
           ? {
               data: row,
@@ -563,7 +785,9 @@ export class PostgresAdapter implements ActionAdapter {
       ) {
         return {
           valid: false,
+
           conflict: true,
+
           reason:
             "PostgreSQL row has changed since the action completed",
         };
@@ -571,12 +795,15 @@ export class PostgresAdapter implements ActionAdapter {
 
       return {
         valid: true,
+
         conflict: false,
       };
     } catch (error) {
       return {
         valid: false,
+
         conflict: false,
+
         reason:
           error instanceof Error
             ? error.message
@@ -607,23 +834,150 @@ export class PostgresAdapter implements ActionAdapter {
     const afterState = {
       kind:
         "postgres-rows-current",
+
       table:
         normalizeTableTarget(
           action.input.target,
         ),
+
       primaryKey:
         metadata.primaryKey,
+
       rows: [],
     };
 
     return {
       actionId:
         action.actionId,
+
       success: true,
+
       result:
         result.rows,
+
       afterHash:
         hashValue(afterState),
+    };
+  }
+
+  private async executeUpdateRows(
+    action: PreparedAction,
+    metadata: PostgresBulkActionMetadata,
+  ): Promise<ActionResult> {
+    if (!metadata.changes) {
+      throw new MercyError(
+        "INVALID_INPUT",
+        "PostgreSQL update_rows requires changes.",
+      );
+    }
+
+    const table =
+      normalizeTableTarget(
+        action.input.target,
+      );
+
+    const entries =
+      Object.entries(
+        metadata.changes,
+      );
+
+    if (entries.length === 0) {
+      throw new MercyError(
+        "INVALID_INPUT",
+        "PostgreSQL update_rows requires at least one change.",
+      );
+    }
+
+    const setClauses: string[] = [];
+
+    const values: unknown[] = [];
+
+    for (
+      const [field, value]
+      of entries
+    ) {
+      validateIdentifier(
+        field,
+        "update field",
+      );
+
+      setClauses.push(
+        `${quoteIdentifier(field)} = $${values.length + 1}`,
+      );
+
+      values.push(value);
+    }
+
+    const where =
+      buildWhereClause(
+        metadata.where,
+      );
+
+    const whereValues =
+      [...where.values];
+
+    const offset =
+      values.length;
+
+    const adjustedWhereSql =
+      where.sql.replace(
+        /\$(\d+)/g,
+        (
+          _match,
+          index: string,
+        ) =>
+          `$${Number(index) + offset}`,
+      );
+
+    values.push(
+      ...whereValues,
+    );
+
+    const result =
+      await this.pool.query(
+        `
+        UPDATE ${tableSql(table)}
+        SET ${setClauses.join(", ")}
+        WHERE ${adjustedWhereSql}
+        RETURNING *
+        `,
+        values,
+      );
+
+    const rows =
+      result.rows as Readonly<
+        Record<string, unknown>
+      >[];
+
+    const afterState = {
+      kind:
+        "postgres-rows-current",
+
+      table,
+
+      primaryKey:
+        metadata.primaryKey,
+
+      rows,
+    };
+
+    return {
+      actionId:
+        action.actionId,
+
+      success: true,
+
+      result: {
+        affectedRows:
+          rows.length,
+
+        rows,
+      },
+
+      afterHash:
+        hashValue(
+          afterState,
+        ),
     };
   }
 
@@ -634,12 +988,17 @@ export class PostgresAdapter implements ActionAdapter {
     const verification =
       await this.verify(action);
 
-    if (verification.conflict) {
+    if (
+      verification.conflict
+    ) {
       return {
         actionId:
           action.id,
+
         success: false,
+
         conflict: true,
+
         error:
           verification.reason ??
           "PostgreSQL rows changed since the action completed",
@@ -658,14 +1017,19 @@ export class PostgresAdapter implements ActionAdapter {
       );
     }
 
-    for (const row of state.rows) {
+    for (
+      const row of state.rows
+    ) {
       await this.restoreRow(
         state.table,
+
         state.primaryKey,
+
         this.getPrimaryKeyValue(
           row,
           state.primaryKey,
         ),
+
         row,
       );
     }
@@ -673,12 +1037,14 @@ export class PostgresAdapter implements ActionAdapter {
     return {
       actionId:
         action.id,
+
       success: true,
+
       conflict: false,
     };
   }
 
-  private async verifyDeleteRows(
+  private async verifyBulkRows(
     action: Action,
     metadata: PostgresBulkActionMetadata,
   ): Promise<VerificationResult> {
@@ -705,17 +1071,22 @@ export class PostgresAdapter implements ActionAdapter {
     const currentState = {
       kind:
         "postgres-rows-current",
+
       table:
         normalizeTableTarget(
           action.target,
         ),
+
       primaryKey:
         metadata.primaryKey,
+
       rows,
     };
 
     const currentHash =
-      hashValue(currentState);
+      hashValue(
+        currentState,
+      );
 
     if (
       currentHash !==
@@ -723,7 +1094,9 @@ export class PostgresAdapter implements ActionAdapter {
     ) {
       return {
         valid: false,
+
         conflict: true,
+
         reason:
           "PostgreSQL rows have changed since the action completed",
       };
@@ -731,55 +1104,57 @@ export class PostgresAdapter implements ActionAdapter {
 
     return {
       valid: true,
+
       conflict: false,
     };
   }
 
   private getBulkMetadata(
-    input:
-      ActionInput |
-      PreparedAction,
+    input: ActionInput,
   ): PostgresBulkActionMetadata | null {
-    const metadata =
-      input.metadata;
-
-    if (!metadata) {
+    if (
+      input.type !== "custom" ||
+      !input.metadata ||
+      typeof input.metadata["operation"] !==
+        "string"
+    ) {
       return null;
     }
 
+    const operation =
+      input.metadata["operation"];
+
     if (
-      metadata["operation"] !==
-      "delete_rows"
+      operation !== "delete_rows" &&
+      operation !== "update_rows"
     ) {
       return null;
     }
 
     const primaryKey =
-      metadata["primaryKey"];
-
-    const where =
-      metadata["where"];
+      input.metadata["primaryKey"];
 
     if (
       typeof primaryKey !==
-        "string" ||
-      !primaryKey
+      "string"
     ) {
       throw new MercyError(
         "INVALID_INPUT",
-        "PostgreSQL delete_rows requires a primaryKey.",
+        "PostgreSQL bulk action requires a primaryKey.",
       );
     }
 
+    const where =
+      input.metadata["where"];
+
     if (
-      typeof where !==
-        "object" ||
-      where === null ||
+      !where ||
+      typeof where !== "object" ||
       Array.isArray(where)
     ) {
       throw new MercyError(
         "INVALID_INPUT",
-        "PostgreSQL delete_rows requires a where filter.",
+        "PostgreSQL bulk action requires a where filter.",
       );
     }
 
@@ -793,26 +1168,78 @@ export class PostgresAdapter implements ActionAdapter {
       typeof filter["field"] !==
         "string" ||
       typeof filter["operator"] !==
-        "string"
+        "string" ||
+      !("value" in filter)
     ) {
       throw new MercyError(
         "INVALID_INPUT",
-        "PostgreSQL delete_rows requires a valid where filter.",
+        "Invalid PostgreSQL where filter.",
       );
     }
 
+    const changesValue =
+      input.metadata["changes"];
+
+    if (
+      operation ===
+      "update_rows"
+    ) {
+      if (
+        !changesValue ||
+        typeof changesValue !==
+          "object" ||
+        Array.isArray(changesValue)
+      ) {
+        throw new MercyError(
+          "INVALID_INPUT",
+          "PostgreSQL update_rows requires changes.",
+        );
+      }
+
+      if (
+        Object.keys(
+          changesValue,
+        ).length === 0
+      ) {
+        throw new MercyError(
+          "INVALID_INPUT",
+          "PostgreSQL update_rows requires at least one change.",
+        );
+      }
+    }
+
     return {
-      operation:
-        "delete_rows",
+      operation,
+
       primaryKey,
+
       where: {
         field:
           filter["field"],
+
         operator:
-          filter["operator"] as PostgresBulkActionMetadata["where"]["operator"],
+          filter[
+            "operator"
+          ] as PostgresBulkActionMetadata[
+            "where"
+          ]["operator"],
+
         value:
           filter["value"],
       },
+
+      ...(operation ===
+      "update_rows"
+        ? {
+            changes:
+              changesValue as Readonly<
+                Record<
+                  string,
+                  unknown
+                >
+              >,
+          }
+        : {}),
     };
   }
 
@@ -826,10 +1253,13 @@ export class PostgresAdapter implements ActionAdapter {
     return this.getBulkMetadata({
       projectId:
         action.projectId,
+
       type:
         action.type,
+
       target:
         action.target,
+
       metadata:
         action.metadata,
     });
@@ -837,7 +1267,9 @@ export class PostgresAdapter implements ActionAdapter {
 
   private getPrimaryKeyValue(
     row:
-      Readonly<Record<string, unknown>>,
+      Readonly<
+        Record<string, unknown>
+      >,
     primaryKey: string,
   ): string | number {
     const value =
@@ -901,7 +1333,8 @@ export class PostgresAdapter implements ActionAdapter {
 
     const values =
       entries.map(
-        ([, value]) => value,
+        ([, value]) =>
+          value,
       );
 
     const sql = `
@@ -954,7 +1387,10 @@ export class PostgresAdapter implements ActionAdapter {
       );
     }
 
-    for (const [column] of entries) {
+    for (
+      const [column]
+      of entries
+    ) {
       validateIdentifier(
         column,
         "column name",
@@ -982,7 +1418,8 @@ export class PostgresAdapter implements ActionAdapter {
 
     const values =
       entries.map(
-        ([, value]) => value,
+        ([, value]) =>
+          value,
       );
 
     values.push(
@@ -1059,7 +1496,10 @@ export class PostgresAdapter implements ActionAdapter {
       );
     }
 
-    for (const [column] of entries) {
+    for (
+      const [column]
+      of entries
+    ) {
       validateIdentifier(
         column,
         "column name",
@@ -1080,7 +1520,8 @@ export class PostgresAdapter implements ActionAdapter {
 
     const values =
       entries.map(
-        ([, value]) => value,
+        ([, value]) =>
+          value,
       );
 
     const updates =
@@ -1142,7 +1583,9 @@ export class PostgresAdapter implements ActionAdapter {
 
     await this.pool.query(
       sql,
-      [primaryKeyValue],
+      [
+        primaryKeyValue,
+      ],
     );
   }
 
@@ -1162,7 +1605,9 @@ export class PostgresAdapter implements ActionAdapter {
     const result =
       await this.pool.query(
         sql,
-        [primaryKeyValue],
+        [
+          primaryKeyValue,
+        ],
       );
 
     return (
@@ -1191,7 +1636,9 @@ export class PostgresAdapter implements ActionAdapter {
       metadata["primaryKey"];
 
     const primaryKeyValue =
-      metadata["primaryKeyValue"];
+      metadata[
+        "primaryKeyValue"
+      ];
 
     if (
       typeof primaryKey !==
@@ -1228,12 +1675,19 @@ export class PostgresAdapter implements ActionAdapter {
 
     return {
       primaryKey,
+
       primaryKeyValue,
+
       ...(data
-        ? { data }
+        ? {
+            data,
+          }
         : {}),
+
       ...(changes
-        ? { changes }
+        ? {
+            changes,
+          }
         : {}),
     };
   }
@@ -1251,10 +1705,13 @@ export class PostgresAdapter implements ActionAdapter {
     return this.getMetadata({
       projectId:
         action.projectId,
+
       type:
         action.type,
+
       target:
         action.target,
+
       metadata:
         action.metadata,
     });

@@ -1109,73 +1109,153 @@ describe(
         },
       ]);
     });
-    test("rejects bulk delete undo when a deleted row is externally recreated", async () => {
+    test("UPDATE_ROWS + UNDO", async () => {
       await clientPool.query(
-        `
-    INSERT INTO "${tableName}" (id, name, email)
-    VALUES
-      (1, 'Alice', 'alice@example.com'),
-      (2, 'Bob', 'bob@example.com'),
-      (3, 'Charlie', 'charlie@example.com'),
-      (4, 'David', 'david@example.com'),
-      (5, 'Eve', 'eve@example.com')
-    `,
+        `INSERT INTO "${tableName}" (id, name, email)
+     VALUES
+       (1, 'Alice', 'alice@test.com'),
+       (2, 'Bob', 'bob@test.com'),
+       (3, 'Charlie', 'charlie@test.com')`,
       );
 
-      const action = {
-        projectId: "project-1",
-        type: "custom" as const,
+      const result = await runtime.execute({
+        projectId,
+        type: "custom",
         target: tableName,
         metadata: {
-          actionId: crypto.randomUUID(),
-          operation: "delete_rows",
+          operation: "update_rows",
           primaryKey: "id",
           where: {
             field: "id",
             operator: "in",
-            value: [2, 3, 4],
+            value: [1, 2, 3],
+          },
+          changes: {
+            email: "mercy@test.com",
           },
         },
-      };
-
-      const result = await runtime.execute(action);
+      });
 
       expect(result.success).toBe(true);
 
-      const afterDelete = await clientPool.query(
+      const updated = await clientPool.query(
         `SELECT * FROM "${tableName}" ORDER BY id`,
       );
 
-      expect(afterDelete.rows).toEqual([
+      expect(updated.rows).toEqual([
         {
           id: 1,
           name: "Alice",
-          email: "alice@example.com",
+          email: "mercy@test.com",
         },
         {
-          id: 5,
-          name: "Eve",
-          email: "eve@example.com",
+          id: 2,
+          name: "Bob",
+          email: "mercy@test.com",
+        },
+        {
+          id: 3,
+          name: "Charlie",
+          email: "mercy@test.com",
         },
       ]);
 
-      // External change: recreate one of the deleted rows
+      const undo = await runtime.undo(result.actionId);
+
+      expect(undo.success).toBe(true);
+      expect(undo.conflict).toBe(false);
+
+      const restored = await clientPool.query(
+        `SELECT * FROM "${tableName}" ORDER BY id`,
+      );
+
+      expect(restored.rows).toEqual([
+        {
+          id: 1,
+          name: "Alice",
+          email: "alice@test.com",
+        },
+        {
+          id: 2,
+          name: "Bob",
+          email: "bob@test.com",
+        },
+        {
+          id: 3,
+          name: "Charlie",
+          email: "charlie@test.com",
+        },
+      ]);
+    });
+
+    test("rejects UPDATE_ROWS undo after external modification", async () => {
       await clientPool.query(
-        `
-    INSERT INTO "${tableName}" (id, name, email)
-    VALUES (3, 'External User', 'external@example.com')
-    `,
+        `INSERT INTO "${tableName}" (id, name, email)
+     VALUES
+       (1, 'Alice', 'alice@test.com'),
+       (2, 'Bob', 'bob@test.com'),
+       (3, 'Charlie', 'charlie@test.com')`,
       );
 
-      const undoResult = await runtime.undo(
-        result.actionId,
+      const result = await runtime.execute({
+        projectId,
+        type: "custom",
+        target: tableName,
+        metadata: {
+          operation: "update_rows",
+          primaryKey: "id",
+          where: {
+            field: "id",
+            operator: "in",
+            value: [1, 2, 3],
+          },
+          changes: {
+            email: "mercy@test.com",
+          },
+        },
+      });
+
+      expect(result.success).toBe(true);
+
+      const updated = await clientPool.query(
+        `SELECT * FROM "${tableName}" ORDER BY id`,
       );
 
-      expect(undoResult.success).toBe(false);
-      expect(undoResult.error).toBe(
+      expect(updated.rows).toEqual([
+        {
+          id: 1,
+          name: "Alice",
+          email: "mercy@test.com",
+        },
+        {
+          id: 2,
+          name: "Bob",
+          email: "mercy@test.com",
+        },
+        {
+          id: 3,
+          name: "Charlie",
+          email: "mercy@test.com",
+        },
+      ]);
+
+      // External modification after the action completed.
+      await clientPool.query(
+        `UPDATE "${tableName}"
+     SET email = 'external@test.com'
+     WHERE id = 2`,
+      );
+
+      const undo = await runtime.undo(result.actionId);
+
+      expect(undo.success).toBe(false);
+      expect(undo.conflict).toBe(true);
+
+      expect(undo.error).toBe(
         "PostgreSQL rows have changed since the action completed",
       );
-      // External data must remain untouched.
+
+      // External change must remain untouched.
       const finalState = await clientPool.query(
         `SELECT * FROM "${tableName}" ORDER BY id`,
       );
@@ -1184,19 +1264,122 @@ describe(
         {
           id: 1,
           name: "Alice",
-          email: "alice@example.com",
+          email: "mercy@test.com",
+        },
+        {
+          id: 2,
+          name: "Bob",
+          email: "external@test.com",
         },
         {
           id: 3,
-          name: "External User",
-          email: "external@example.com",
-        },
-        {
-          id: 5,
-          name: "Eve",
-          email: "eve@example.com",
+          name: "Charlie",
+          email: "mercy@test.com",
         },
       ]);
+    });
+    test("UPDATE_ROWS + IN + UNDO", async () => {
+      await clientPool.query(
+        `INSERT INTO "${tableName}" (id, name, email)
+     VALUES
+       (1, 'Alice', 'alice@test.com'),
+       (2, 'Bob', 'bob@test.com'),
+       (3, 'Charlie', 'charlie@test.com')`,
+      );
+
+      const result = await runtime.execute({
+        projectId,
+        type: "custom",
+        target: tableName,
+        metadata: {
+          operation: "update_rows",
+          primaryKey: "id",
+          where: {
+            field: "id",
+            operator: "in",
+            value: [1, 3],
+          },
+          changes: {
+            email: "bulk@test.com",
+          },
+        },
+      });
+
+      expect(result.success).toBe(true);
+
+      const updated = await clientPool.query(
+        `SELECT id, email FROM "${tableName}" ORDER BY id`,
+      );
+
+      expect(updated.rows).toEqual([
+        {
+          id: 1,
+          email: "bulk@test.com",
+        },
+        {
+          id: 2,
+          email: "bob@test.com",
+        },
+        {
+          id: 3,
+          email: "bulk@test.com",
+        },
+      ]);
+
+      const undo = await runtime.undo(result.actionId);
+
+      expect(undo.success).toBe(true);
+      expect(undo.conflict).toBe(false);
+    }); test("UPDATE_ROWS conflict preserves external change", async () => {
+      await clientPool.query(
+        `INSERT INTO "${tableName}" (id, name, email)
+     VALUES
+       (1, 'Alice', 'alice@test.com'),
+       (2, 'Bob', 'bob@test.com'),
+       (3, 'Charlie', 'charlie@test.com')`,
+      );
+
+      const result = await runtime.execute({
+        projectId,
+        type: "custom",
+        target: tableName,
+        metadata: {
+          operation: "update_rows",
+          primaryKey: "id",
+          where: {
+            field: "id",
+            operator: "in",
+            value: [1, 2, 3],
+          },
+          changes: {
+            email: "mercy@test.com",
+          },
+        },
+      });
+
+      expect(result.success).toBe(true);
+
+      await clientPool.query(
+        `UPDATE "${tableName}"
+     SET email = 'external@test.com'
+     WHERE id = 2`,
+      );
+
+      const undo = await runtime.undo(result.actionId);
+
+      expect(undo.success).toBe(false);
+      expect(undo.conflict).toBe(true);
+      expect(undo.error).toContain(
+        "PostgreSQL row",
+      );
+
+      const row = await clientPool.query(
+        `SELECT email FROM "${tableName}" WHERE id = 2`,
+      );
+
+      expect(row.rows[0]?.email).toBe(
+        "external@test.com",
+      );
     });
   },
 );
