@@ -6,6 +6,7 @@ import {
   writeFile,
   chmod
 } from "node:fs/promises";
+
 import {
   dirname,
   isAbsolute,
@@ -335,23 +336,93 @@ export class FilesystemAdapter
       };
     }
 
-    const metadata =
-      snapshot.metadata;
-
-    const exists =
-      metadata?.exists === true;
-
-    const originalPath =
-      typeof metadata?.path === "string"
-        ? metadata.path
-        : action.target;
-
-    const path =
-      this.resolveTarget(
-        originalPath
-      );
-
     try {
+      /*
+       * Rename / move are reversed by moving
+       * the destination back to the original path.
+       */
+      if (
+        action.type === "rename" ||
+        action.type === "move"
+      ) {
+        const destination =
+          action.metadata?.destination;
+
+        if (
+          typeof destination !== "string" ||
+          destination.length === 0
+        ) {
+          return {
+            actionId: action.id,
+            success: false,
+            conflict: false,
+            error:
+              `${action.type} requires metadata.destination`
+          };
+        }
+
+        const sourcePath =
+          this.resolveTarget(
+            action.target
+          );
+
+        const destinationPath =
+          this.resolveTarget(
+            destination
+          );
+
+        /*
+         * The original path must not have been
+         * recreated after the action. Otherwise
+         * reversing the move could overwrite it.
+         */
+        if (
+          await this.exists(sourcePath)
+        ) {
+          return {
+            actionId: action.id,
+            success: false,
+            conflict: true,
+            error:
+              "Original resource already exists. Refusing to overwrite it during undo."
+          };
+        }
+
+        /*
+         * Reverse the original rename/move.
+         */
+        await mkdirParent(
+          sourcePath
+        );
+
+        await rename(
+          destinationPath,
+          sourcePath
+        );
+
+        return {
+          actionId: action.id,
+          success: true,
+          conflict: false
+        };
+      }
+
+      const metadata =
+        snapshot.metadata;
+
+      const exists =
+        metadata?.exists === true;
+
+      const originalPath =
+        typeof metadata?.path === "string"
+          ? metadata.path
+          : action.target;
+
+      const path =
+        this.resolveTarget(
+          originalPath
+        );
+
       if (!exists) {
         await rm(path, {
           force: true
@@ -405,9 +476,35 @@ export class FilesystemAdapter
       };
     }
 
+    /*
+     * create/update:
+     *   verify action.target
+     *
+     * rename/move:
+     *   verify destination because the
+     *   resource now lives there.
+     */
+    const target =
+      action.type === "rename" ||
+      action.type === "move"
+        ? action.metadata?.destination
+        : action.target;
+
+    if (
+      typeof target !== "string" ||
+      target.length === 0
+    ) {
+      return {
+        valid: false,
+        conflict: true,
+        reason:
+          "Unable to determine resource location for verification."
+      };
+    }
+
     const path =
       this.resolveTarget(
-        action.target
+        target
       );
 
     try {
@@ -443,6 +540,24 @@ export class FilesystemAdapter
           reason:
             "Resource no longer exists."
         };
+      }
+
+      throw error;
+    }
+  }
+
+  private async exists(
+    path: string
+  ): Promise<boolean> {
+    try {
+      await stat(path);
+
+      return true;
+    } catch (error) {
+      if (
+        this.isNotFoundError(error)
+      ) {
+        return false;
       }
 
       throw error;
