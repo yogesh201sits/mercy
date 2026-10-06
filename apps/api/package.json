@@ -8,9 +8,16 @@
     "start": "bun src/index.ts"
   },
   "dependencies": {
+    "@mercy/filesystem": "workspace:*",
     "@mercy/postgres": "workspace:*",
+    "@mercy/postgres-adapter": "workspace:*",
     "@mercy/runtime": "workspace:*",
+    "@mercy/snapshots": "workspace:*",
     "@mercy/shared": "workspace:*",
-    "hono": "^4.13.13"
+    "hono": "^4.13.13",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
   }
 }
