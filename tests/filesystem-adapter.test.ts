@@ -62,6 +62,17 @@ describe("FilesystemAdapter", () => {
     expect(
       adapter.canHandle({
         projectId: "project-1",
+        type: "update",
+        target: "users",
+        metadata: {
+          primaryKey: "id"
+        }
+      })
+    ).toBe(false);
+
+    expect(
+      adapter.canHandle({
+        projectId: "project-1",
         type: "delete",
         target: "hello.txt"
       })
