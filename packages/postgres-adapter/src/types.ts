@@ -1,81 +1,68 @@
 import type { Pool } from "pg";
 
-export interface PostgresRowActionMetadata {
-  readonly primaryKey: string;
-  readonly value: string | number;
-
-  /**
-   * Data used when creating a row.
-   */
-  readonly data?: Readonly<Record<string, unknown>>;
-
-  /**
-   * Fields changed by an update.
-   */
-  readonly changes?: Readonly<Record<string, unknown>>;
-}
-
-export interface PostgresSnapshotState {
-  readonly kind: "postgres-row";
-  readonly table: string;
-  readonly primaryKey: string;
-  readonly primaryKeyValue: string | number;
-  readonly existed: boolean;
-  readonly data?: Readonly<Record<string, unknown>>;
-}
-
-
 export interface PostgresAdapterOptions {
   readonly pool: Pool;
-
-  /**
-   * Restricts Mercy to tables explicitly registered by the client.
-   *
-   * Examples:
-   * ["users", "orders"]
-   * ["public.users", "public.orders"]
-   */
   readonly allowedTables?: readonly string[];
 }
 
 export interface PostgresRowMetadata {
-  /**
-   * Primary-key column.
-   */
   readonly primaryKey: string;
-
-  /**
-   * Primary-key value of the target row.
-   */
   readonly primaryKeyValue: string | number;
-
-  /**
-   * Complete row data for CREATE.
-   */
   readonly data?: Readonly<Record<string, unknown>>;
-
-  /**
-   * Fields to change for UPDATE.
-   */
   readonly changes?: Readonly<Record<string, unknown>>;
 }
 
+/**
+ * Snapshot state for a single PostgreSQL row.
+ */
 export interface PostgresSnapshotState {
   readonly kind: "postgres-row";
-
   readonly table: string;
-
   readonly primaryKey: string;
-
   readonly primaryKeyValue: string | number;
-
-  /**
-   * Whether the row existed before the action.
-   */
   readonly existed: boolean;
-
-  /**
-   * Complete row before the action.
-   */
   readonly data?: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Supported operators for bulk PostgreSQL row filtering.
+ */
+export type PostgresFilterOperator =
+  | "eq"
+  | "neq"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "in";
+
+/**
+ * Structured PostgreSQL row filter.
+ *
+ * Values are always passed separately to PostgreSQL
+ * as query parameters.
+ */
+export interface PostgresRowFilter {
+  readonly field: string;
+  readonly operator: PostgresFilterOperator;
+  readonly value: unknown;
+}
+
+/**
+ * Metadata for a PostgreSQL bulk row action.
+ */
+export interface PostgresBulkActionMetadata {
+  readonly operation: "delete_rows";
+  readonly primaryKey: string;
+  readonly where: PostgresRowFilter;
+}
+
+/**
+ * Snapshot state for a bulk PostgreSQL row operation.
+ */
+export interface PostgresRowsSnapshotState {
+  readonly kind: "postgres-rows";
+  readonly table: string;
+  readonly primaryKey: string;
+  readonly rows: readonly Readonly<Record<string, unknown>>[];
 }

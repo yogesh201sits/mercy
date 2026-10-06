@@ -184,30 +184,30 @@ describe(
       async () => {
         const agentAction:
           ActionInput = {
-            projectId,
+          projectId,
 
-            type: "create",
+          type: "create",
 
-            target: tableName,
+          target: tableName,
 
-            metadata: {
-              actionId:
-                crypto.randomUUID(),
+          metadata: {
+            actionId:
+              crypto.randomUUID(),
 
-              primaryKey:
-                "id",
+            primaryKey:
+              "id",
 
-              primaryKeyValue:
-                1,
+            primaryKeyValue:
+              1,
 
-              data: {
-                id: 1,
-                name: "Yogesh",
-                email:
-                  "yogesh@example.com",
-              },
+            data: {
+              id: 1,
+              name: "Yogesh",
+              email:
+                "yogesh@example.com",
             },
-          };
+          },
+        };
 
         console.log(
           `\n🤖 Agent: creating row in ${tableName}`,
@@ -366,31 +366,31 @@ describe(
 
         const agentAction:
           ActionInput = {
-            projectId,
+          projectId,
 
-            type: "update",
+          type: "update",
 
-            target: tableName,
+          target: tableName,
 
-            metadata: {
-              actionId:
-                crypto.randomUUID(),
+          metadata: {
+            actionId:
+              crypto.randomUUID(),
 
-              primaryKey:
-                "id",
+            primaryKey:
+              "id",
 
-              primaryKeyValue:
-                1,
+            primaryKeyValue:
+              1,
 
-              changes: {
-                name:
-                  "Yogesh Jamdade",
+            changes: {
+              name:
+                "Yogesh Jamdade",
 
-                email:
-                  "new@example.com",
-              },
+              email:
+                "new@example.com",
             },
-          };
+          },
+        };
 
         console.log(
           `\n🤖 Agent: updating row in ${tableName}`,
@@ -545,23 +545,23 @@ describe(
 
         const agentAction:
           ActionInput = {
-            projectId,
+          projectId,
 
-            type: "delete",
+          type: "delete",
 
-            target: tableName,
+          target: tableName,
 
-            metadata: {
-              actionId:
-                crypto.randomUUID(),
+          metadata: {
+            actionId:
+              crypto.randomUUID(),
 
-              primaryKey:
-                "id",
+            primaryKey:
+              "id",
 
-              primaryKeyValue:
-                1,
-            },
-          };
+            primaryKeyValue:
+              1,
+          },
+        };
 
         console.log(
           `\n🤖 Agent: deleting row from ${tableName}`,
@@ -707,28 +707,28 @@ describe(
 
         const agentAction:
           ActionInput = {
-            projectId,
+          projectId,
 
-            type: "update",
+          type: "update",
 
-            target: tableName,
+          target: tableName,
 
-            metadata: {
-              actionId:
-                crypto.randomUUID(),
+          metadata: {
+            actionId:
+              crypto.randomUUID(),
 
-              primaryKey:
-                "id",
+            primaryKey:
+              "id",
 
-              primaryKeyValue:
-                1,
+            primaryKeyValue:
+              1,
 
-              changes: {
-                name:
-                  "Mercy Updated",
-              },
+            changes: {
+              name:
+                "Mercy Updated",
             },
-          };
+          },
+        };
 
         console.log(
           `\n🤖 Agent: updating row in ${tableName}`,
@@ -806,5 +806,397 @@ describe(
       },
       45_000,
     );
+    // =========================================================
+    // BULK DELETE
+    // =========================================================
+
+    test(
+      "deletes PostgreSQL rows in bulk and restores them",
+      async () => {
+        await clientPool.query(
+          `
+          INSERT INTO "${tableName}"
+            (id, name, email)
+          VALUES
+            ($1, $2, $3),
+            ($4, $5, $6),
+            ($7, $8, $9)
+          `,
+          [
+            1,
+            "Yogesh",
+            "yogesh@example.com",
+            2,
+            "Rahul",
+            "rahul@example.com",
+            3,
+            "Amit",
+            "amit@example.com",
+          ],
+        );
+
+        const agentAction:
+          ActionInput = {
+          projectId,
+
+          type: "custom",
+
+          target: tableName,
+
+          metadata: {
+            actionId:
+              crypto.randomUUID(),
+
+            operation:
+              "delete_rows",
+
+            primaryKey:
+              "id",
+
+            where: {
+              field: "id",
+              operator: "eq",
+              value: 2,
+            },
+          },
+        };
+
+        console.log(
+          `\n🤖 Agent: bulk deleting rows from ${tableName}`,
+        );
+
+        // -------------------------------------------------------
+        // Execute
+        // -------------------------------------------------------
+
+        const result =
+          await runtime.execute(
+            agentAction,
+          );
+
+        expect(
+          result.success,
+        ).toBe(true);
+
+        // -------------------------------------------------------
+        // Verify target row deleted
+        // -------------------------------------------------------
+
+        const deleted =
+          await clientPool.query(
+            `
+            SELECT *
+            FROM "${tableName}"
+            WHERE id = $1
+            `,
+            [2],
+          );
+
+        expect(
+          deleted.rows,
+        ).toHaveLength(0);
+
+        // -------------------------------------------------------
+        // Verify non-target rows remain
+        // -------------------------------------------------------
+
+        const remaining =
+          await clientPool.query(
+            `
+            SELECT *
+            FROM "${tableName}"
+            ORDER BY id
+            `,
+          );
+
+        expect(
+          remaining.rows,
+        ).toEqual([
+          {
+            id: 1,
+            name: "Yogesh",
+            email:
+              "yogesh@example.com",
+          },
+          {
+            id: 3,
+            name: "Amit",
+            email:
+              "amit@example.com",
+          },
+        ]);
+
+        // -------------------------------------------------------
+        // Verify snapshot
+        // -------------------------------------------------------
+
+        const storedAction =
+          await actionJournal.get(
+            result.actionId,
+          );
+
+        expect(
+          storedAction,
+        ).not.toBeNull();
+
+        expect(
+          storedAction?.beforeSnapshotId,
+        ).toBeDefined();
+
+        const snapshotData =
+          await snapshots.read(
+            storedAction!
+              .beforeSnapshotId!,
+          );
+
+        const snapshotState =
+          JSON.parse(
+            new TextDecoder().decode(
+              snapshotData,
+            ),
+          );
+
+        expect(
+          snapshotState.kind,
+        ).toBe("postgres-rows");
+
+        expect(
+          snapshotState.table,
+        ).toBe(tableName);
+
+        expect(
+          snapshotState.primaryKey,
+        ).toBe("id");
+
+        expect(
+          snapshotState.rows,
+        ).toEqual([
+          {
+            id: 2,
+            name: "Rahul",
+            email:
+              "rahul@example.com",
+          },
+        ]);
+
+        // -------------------------------------------------------
+        // Undo
+        // -------------------------------------------------------
+
+        console.log(
+          "↩️ Agent: undoing PostgreSQL bulk delete",
+        );
+
+        const undo =
+          await runtime.undo(
+            result.actionId,
+          );
+
+        expect(
+          undo.success,
+        ).toBe(true);
+
+        expect(
+          undo.conflict,
+        ).toBe(false);
+
+        // -------------------------------------------------------
+        // Verify deleted row restored
+        // -------------------------------------------------------
+
+        const restored =
+          await clientPool.query(
+            `
+            SELECT *
+            FROM "${tableName}"
+            ORDER BY id
+            `,
+          );
+
+        expect(
+          restored.rows,
+        ).toEqual([
+          {
+            id: 1,
+            name: "Yogesh",
+            email:
+              "yogesh@example.com",
+          },
+          {
+            id: 2,
+            name: "Rahul",
+            email:
+              "rahul@example.com",
+          },
+          {
+            id: 3,
+            name: "Amit",
+            email:
+              "amit@example.com",
+          },
+        ]);
+      },
+      45_000,
+    );
+    test("deletes multiple PostgreSQL rows matching a bulk filter and restores all rows", async () => {
+      await clientPool.query(
+        `
+    INSERT INTO "${tableName}" (id, name, email)
+    VALUES
+      (1, 'Alice', 'alice@example.com'),
+      (2, 'Bob', 'bob@example.com'),
+      (3, 'Charlie', 'charlie@example.com')
+    `,
+      );
+
+      const action = {
+        projectId: "project-1",
+        type: "custom" as const,
+        target: tableName,
+        metadata: {
+          actionId: crypto.randomUUID(),
+          operation: "delete_rows",
+          primaryKey: "id",
+          where: {
+            field: "id",
+            operator: "in",
+            value: [2, 3],
+          },
+        },
+      };
+
+      const result = await runtime.execute(action);
+
+      expect(result.success).toBe(true);
+
+      const afterDelete = await clientPool.query(
+        `SELECT * FROM "${tableName}" ORDER BY id`,
+      );
+
+      expect(afterDelete.rows).toEqual([
+        {
+          id: 1,
+          name: "Alice",
+          email: "alice@example.com",
+        },
+      ]);
+
+      const undoResult = await runtime.undo(
+        result.actionId,
+      );
+
+      expect(undoResult.success).toBe(true);
+
+      const afterUndo = await clientPool.query(
+        `SELECT * FROM "${tableName}" ORDER BY id`,
+      );
+
+      expect(afterUndo.rows).toEqual([
+        {
+          id: 1,
+          name: "Alice",
+          email: "alice@example.com",
+        },
+        {
+          id: 2,
+          name: "Bob",
+          email: "bob@example.com",
+        },
+        {
+          id: 3,
+          name: "Charlie",
+          email: "charlie@example.com",
+        },
+      ]);
+    });
+    test("rejects bulk delete undo when a deleted row is externally recreated", async () => {
+      await clientPool.query(
+        `
+    INSERT INTO "${tableName}" (id, name, email)
+    VALUES
+      (1, 'Alice', 'alice@example.com'),
+      (2, 'Bob', 'bob@example.com'),
+      (3, 'Charlie', 'charlie@example.com'),
+      (4, 'David', 'david@example.com'),
+      (5, 'Eve', 'eve@example.com')
+    `,
+      );
+
+      const action = {
+        projectId: "project-1",
+        type: "custom" as const,
+        target: tableName,
+        metadata: {
+          actionId: crypto.randomUUID(),
+          operation: "delete_rows",
+          primaryKey: "id",
+          where: {
+            field: "id",
+            operator: "in",
+            value: [2, 3, 4],
+          },
+        },
+      };
+
+      const result = await runtime.execute(action);
+
+      expect(result.success).toBe(true);
+
+      const afterDelete = await clientPool.query(
+        `SELECT * FROM "${tableName}" ORDER BY id`,
+      );
+
+      expect(afterDelete.rows).toEqual([
+        {
+          id: 1,
+          name: "Alice",
+          email: "alice@example.com",
+        },
+        {
+          id: 5,
+          name: "Eve",
+          email: "eve@example.com",
+        },
+      ]);
+
+      // External change: recreate one of the deleted rows
+      await clientPool.query(
+        `
+    INSERT INTO "${tableName}" (id, name, email)
+    VALUES (3, 'External User', 'external@example.com')
+    `,
+      );
+
+      const undoResult = await runtime.undo(
+        result.actionId,
+      );
+
+      expect(undoResult.success).toBe(false);
+      expect(undoResult.error).toBe(
+        "PostgreSQL rows have changed since the action completed",
+      );
+      // External data must remain untouched.
+      const finalState = await clientPool.query(
+        `SELECT * FROM "${tableName}" ORDER BY id`,
+      );
+
+      expect(finalState.rows).toEqual([
+        {
+          id: 1,
+          name: "Alice",
+          email: "alice@example.com",
+        },
+        {
+          id: 3,
+          name: "External User",
+          email: "external@example.com",
+        },
+        {
+          id: 5,
+          name: "Eve",
+          email: "eve@example.com",
+        },
+      ]);
+    });
   },
 );

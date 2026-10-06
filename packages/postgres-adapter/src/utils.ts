@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 
 import { MercyError } from "@mercy/shared";
 
+import type {
+  PostgresFilterOperator,
+  PostgresRowFilter,
+} from "./types";
+
 const IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 export function validateIdentifier(
@@ -144,5 +149,89 @@ export function decodeSnapshot<T>(
         cause: error,
       },
     );
+  }
+}
+
+export interface PostgresWhereClause {
+  readonly sql: string;
+  readonly values: readonly unknown[];
+}
+
+function quoteFilterIdentifier(identifier: string): string {
+  validateIdentifier(identifier, "filter field");
+  return quoteIdentifier(identifier);
+}
+
+export function buildWhereClause(
+  filter: PostgresRowFilter,
+): PostgresWhereClause {
+  const column = quoteFilterIdentifier(filter.field);
+
+  switch (filter.operator) {
+    case "eq":
+      return {
+        sql: `${column} = $1`,
+        values: [filter.value],
+      };
+
+    case "neq":
+      return {
+        sql: `${column} <> $1`,
+        values: [filter.value],
+      };
+
+    case "gt":
+      return {
+        sql: `${column} > $1`,
+        values: [filter.value],
+      };
+
+    case "gte":
+      return {
+        sql: `${column} >= $1`,
+        values: [filter.value],
+      };
+
+    case "lt":
+      return {
+        sql: `${column} < $1`,
+        values: [filter.value],
+      };
+
+    case "lte":
+      return {
+        sql: `${column} <= $1`,
+        values: [filter.value],
+      };
+
+    case "in": {
+      if (!Array.isArray(filter.value)) {
+        throw new Error(
+          "PostgreSQL IN filter requires an array value.",
+        );
+      }
+
+      if (filter.value.length === 0) {
+        throw new Error(
+          "PostgreSQL IN filter cannot be empty.",
+        );
+      }
+
+      const placeholders = filter.value.map(
+        (_, index) => `$${index + 1}`,
+      );
+
+      return {
+        sql: `${column} IN (${placeholders.join(", ")})`,
+        values: filter.value,
+      };
+    }
+
+    default:
+      throw new Error(
+        `Unsupported PostgreSQL filter operator: ${String(
+          filter.operator,
+        )}`,
+      );
   }
 }
