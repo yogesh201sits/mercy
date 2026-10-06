@@ -58,6 +58,20 @@
         "prisma": "^7.0.0",
       },
     },
+    "packages/postgres-adapter": {
+      "name": "@mercy/postgres-adapter",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mercy/core": "workspace:*",
+        "@mercy/journal": "workspace:*",
+        "@mercy/shared": "workspace:*",
+        "@mercy/snapshots": "workspace:*",
+        "pg": "^8.16.3",
+      },
+      "devDependencies": {
+        "@types/pg": "^8.23.1",
+      },
+    },
     "packages/runtime": {
       "name": "@mercy/runtime",
       "version": "0.1.0",
@@ -139,6 +153,8 @@
     "@mercy/journal": ["@mercy/journal@workspace:packages/journal"],
 
     "@mercy/postgres": ["@mercy/postgres@workspace:packages/postgres"],
+
+    "@mercy/postgres-adapter": ["@mercy/postgres-adapter@workspace:packages/postgres-adapter"],
 
     "@mercy/runtime": ["@mercy/runtime@workspace:packages/runtime"],
 

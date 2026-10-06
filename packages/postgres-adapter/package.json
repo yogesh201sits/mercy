@@ -1,0 +1,16 @@
+{
+  "name": "@mercy/postgres-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@mercy/core": "workspace:*",
+    "@mercy/shared": "workspace:*",
+    "@mercy/journal": "workspace:*",
+    "@mercy/snapshots": "workspace:*",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
+  }
+}
