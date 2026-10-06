@@ -1,5 +1,5 @@
 {
-  "name": "@mercy/runtime",
+  "name": "@mercy/undo",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,6 @@
   "dependencies": {
     "@mercy/core": "workspace:*",
     "@mercy/journal": "workspace:*",
-    "@mercy/shared": "workspace:*",
-    "@mercy/undo": "workspace:*"
+    "@mercy/shared": "workspace:*"
   }
 }

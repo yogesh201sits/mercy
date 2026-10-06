@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { MercyRuntime } from "../packages/runtime/src";
 import { FilesystemAdapter } from "../packages/filesystem/src";
 import { LocalSnapshotStorage } from "../packages/snapshots/src";
+import { InMemoryActionGroupJournal } from "../packages/journal/src/groups";
 import { PostgresActionJournal, PostgresSnapshotStore, createPrismaClient } from "../packages/postgres/src";
 
 describe("MercyRuntime + Filesystem integration", () => {
@@ -22,6 +23,8 @@ describe("MercyRuntime + Filesystem integration", () => {
     snapshotDir = await mkdtemp(join(tmpdir(), "mercy-snapshots-"));
 
     const journal = new PostgresActionJournal(prisma);
+    const groupJournal = new InMemoryActionGroupJournal();
+
 
     const snapshotStorage = new LocalSnapshotStorage(snapshotDir);
     const snapshots = new PostgresSnapshotStore(
@@ -33,6 +36,7 @@ describe("MercyRuntime + Filesystem integration", () => {
 
     runtime = new MercyRuntime({
       journal,
+      groupJournal,
       snapshots,
       adapters: [filesystem]
     });

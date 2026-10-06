@@ -13,29 +13,54 @@ datasource db {
 model Action {
   id               String   @id
   projectId        String   @map("project_id")
-
   type             String
   target           String
   status           String
   undoStrategy     String   @map("undo_strategy")
-
   createdAt        DateTime @default(now()) @map("created_at")
   startedAt        DateTime? @map("started_at")
   completedAt      DateTime? @map("completed_at")
-
   beforeSnapshotId String?  @map("before_snapshot_id")
   afterHash        String?  @map("after_hash")
-
   metadata         Json?
   result           Json?
   undoResult       Json?    @map("undo_result")
 
   snapshots        ActionSnapshot[]
+  groupMemberships ActionGroupAction[]
 
   @@index([projectId])
   @@index([projectId, createdAt])
   @@index([status])
   @@map("actions")
+}
+
+model ActionGroup {
+  id          String        @id
+  projectId   String        @map("project_id")
+  status      String
+  createdAt   DateTime      @default(now()) @map("created_at")
+  completedAt DateTime?     @map("completed_at")
+  error       String?
+  actions     ActionGroupAction[]
+
+  @@index([projectId])
+  @@index([projectId, createdAt])
+  @@index([status])
+  @@map("action_groups")
+}
+
+model ActionGroupAction {
+  groupId   String      @map("group_id")
+  actionId  String      @map("action_id")
+  position  Int
+  group     ActionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  action    Action      @relation(fields: [actionId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, actionId])
+  @@unique([groupId, position])
+  @@index([actionId])
+  @@map("action_group_actions")
 }
 
 model ActionSnapshot {

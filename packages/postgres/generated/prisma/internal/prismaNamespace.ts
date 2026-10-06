@@ -398,6 +398,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   Action: 'Action',
+  ActionGroup: 'ActionGroup',
+  ActionGroupAction: 'ActionGroupAction',
   ActionSnapshot: 'ActionSnapshot'
 } as const
 
@@ -414,7 +416,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "action" | "actionSnapshot"
+    modelProps: "action" | "actionGroup" | "actionGroupAction" | "actionSnapshot"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -489,6 +491,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.ActionCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ActionCountAggregateOutputType> | number
+        }
+      }
+    }
+    ActionGroup: {
+      payload: Prisma.$ActionGroupPayload<ExtArgs>
+      fields: Prisma.ActionGroupFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ActionGroupFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ActionGroupFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupPayload>
+        }
+        findFirst: {
+          args: Prisma.ActionGroupFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ActionGroupFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupPayload>
+        }
+        findMany: {
+          args: Prisma.ActionGroupFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupPayload>[]
+        }
+        create: {
+          args: Prisma.ActionGroupCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupPayload>
+        }
+        createMany: {
+          args: Prisma.ActionGroupCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ActionGroupCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupPayload>[]
+        }
+        delete: {
+          args: Prisma.ActionGroupDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupPayload>
+        }
+        update: {
+          args: Prisma.ActionGroupUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupPayload>
+        }
+        deleteMany: {
+          args: Prisma.ActionGroupDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ActionGroupUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ActionGroupUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupPayload>[]
+        }
+        upsert: {
+          args: Prisma.ActionGroupUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupPayload>
+        }
+        aggregate: {
+          args: Prisma.ActionGroupAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateActionGroup>
+        }
+        groupBy: {
+          args: Prisma.ActionGroupGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ActionGroupGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ActionGroupCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ActionGroupCountAggregateOutputType> | number
+        }
+      }
+    }
+    ActionGroupAction: {
+      payload: Prisma.$ActionGroupActionPayload<ExtArgs>
+      fields: Prisma.ActionGroupActionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ActionGroupActionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupActionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ActionGroupActionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupActionPayload>
+        }
+        findFirst: {
+          args: Prisma.ActionGroupActionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupActionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ActionGroupActionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupActionPayload>
+        }
+        findMany: {
+          args: Prisma.ActionGroupActionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupActionPayload>[]
+        }
+        create: {
+          args: Prisma.ActionGroupActionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupActionPayload>
+        }
+        createMany: {
+          args: Prisma.ActionGroupActionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ActionGroupActionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupActionPayload>[]
+        }
+        delete: {
+          args: Prisma.ActionGroupActionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupActionPayload>
+        }
+        update: {
+          args: Prisma.ActionGroupActionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupActionPayload>
+        }
+        deleteMany: {
+          args: Prisma.ActionGroupActionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ActionGroupActionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ActionGroupActionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupActionPayload>[]
+        }
+        upsert: {
+          args: Prisma.ActionGroupActionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ActionGroupActionPayload>
+        }
+        aggregate: {
+          args: Prisma.ActionGroupActionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateActionGroupAction>
+        }
+        groupBy: {
+          args: Prisma.ActionGroupActionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ActionGroupActionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ActionGroupActionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ActionGroupActionCountAggregateOutputType> | number
         }
       }
     }
@@ -623,6 +773,27 @@ export const ActionScalarFieldEnum = {
 } as const
 
 export type ActionScalarFieldEnum = (typeof ActionScalarFieldEnum)[keyof typeof ActionScalarFieldEnum]
+
+
+export const ActionGroupScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  status: 'status',
+  createdAt: 'createdAt',
+  completedAt: 'completedAt',
+  error: 'error'
+} as const
+
+export type ActionGroupScalarFieldEnum = (typeof ActionGroupScalarFieldEnum)[keyof typeof ActionGroupScalarFieldEnum]
+
+
+export const ActionGroupActionScalarFieldEnum = {
+  groupId: 'groupId',
+  actionId: 'actionId',
+  position: 'position'
+} as const
+
+export type ActionGroupActionScalarFieldEnum = (typeof ActionGroupActionScalarFieldEnum)[keyof typeof ActionGroupActionScalarFieldEnum]
 
 
 export const ActionSnapshotScalarFieldEnum = {
@@ -906,6 +1077,8 @@ export interface PrismaClientOptionsWithAdapter extends PrismaClientBaseOptions 
 export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaClientOptionsWithAdapter
 export type GlobalOmitConfig = {
   action?: Prisma.ActionOmit
+  actionGroup?: Prisma.ActionGroupOmit
+  actionGroupAction?: Prisma.ActionGroupActionOmit
   actionSnapshot?: Prisma.ActionSnapshotOmit
 }
 

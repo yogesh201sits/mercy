@@ -162,25 +162,20 @@ export class InMemoryActionJournal
   }
 
   async markUndoFailed(
-    actionId: string,
-    error: string
-  ): Promise<JournalEntry> {
-    const entry = this.require(actionId);
+      actionId: string,
+      result: UndoResult
+    ): Promise<JournalEntry> {
+      const entry = this.require(actionId);
 
-    const updated: JournalEntry = {
-      ...entry,
-      status: "undo_failed",
-      undoResult: {
-        actionId,
-        success: false,
-        conflict: false,
-        error
-      }
-    };
+      const updated: JournalEntry = {
+        ...entry,
+        status: "undo_failed",
+        undoResult: result
+      };
 
-    this.entries.set(actionId, updated);
+      this.entries.set(actionId, updated);
 
-    return updated;
+      return updated;
   }
 
   async get(

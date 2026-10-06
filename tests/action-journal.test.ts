@@ -227,22 +227,20 @@ describe("PostgresActionJournal", () => {
       actionId
     );
 
-    const updated =
-      await journal.markUndoFailed(
+    const updated = await journal.markUndoFailed(
+      actionId,
+      {
         actionId,
-        "Resource changed"
-      );
-
-    expect(
-      updated.status
-    ).toBe("undo_failed");
-
-    expect(
-      updated.undoResult
-    ).toEqual({
+        success: false,
+        conflict: true,
+        error: "Resource changed"
+      }
+    );
+    expect(updated.status).toBe("undo_failed");
+    expect(updated.undoResult).toEqual({
       actionId,
       success: false,
-      conflict: false,
+      conflict: true,
       error: "Resource changed"
     });
   });

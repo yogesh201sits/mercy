@@ -3,5 +3,5 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/journal/action-journal.test.ts"]
+  "include": ["src/**/*.ts", "src/journal/action-journal.test.ts", "../../tests/postgres-action-group-journal.test.ts"]
 }

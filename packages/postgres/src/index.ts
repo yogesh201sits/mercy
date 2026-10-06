@@ -9,3 +9,7 @@ export {
 export * from "./journal/action-journal";
 
 export * from "./stores/snapshot-store";
+
+export * from "./journal/action-journal";
+
+export * from "./groups/postgres-action-group-journal";

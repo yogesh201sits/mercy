@@ -52,6 +52,8 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   Action: 'Action',
+  ActionGroup: 'ActionGroup',
+  ActionGroupAction: 'ActionGroupAction',
   ActionSnapshot: 'ActionSnapshot'
 } as const
 
@@ -89,6 +91,27 @@ export const ActionScalarFieldEnum = {
 } as const
 
 export type ActionScalarFieldEnum = (typeof ActionScalarFieldEnum)[keyof typeof ActionScalarFieldEnum]
+
+
+export const ActionGroupScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  status: 'status',
+  createdAt: 'createdAt',
+  completedAt: 'completedAt',
+  error: 'error'
+} as const
+
+export type ActionGroupScalarFieldEnum = (typeof ActionGroupScalarFieldEnum)[keyof typeof ActionGroupScalarFieldEnum]
+
+
+export const ActionGroupActionScalarFieldEnum = {
+  groupId: 'groupId',
+  actionId: 'actionId',
+  position: 'position'
+} as const
+
+export type ActionGroupActionScalarFieldEnum = (typeof ActionGroupActionScalarFieldEnum)[keyof typeof ActionGroupActionScalarFieldEnum]
 
 
 export const ActionSnapshotScalarFieldEnum = {
