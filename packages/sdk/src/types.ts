@@ -9,6 +9,8 @@ import type {
 
 import type { MercyRuntime } from "@mercy/runtime";
 
+import type { MercyTransport } from "./transport";
+
 export interface MercyClientOptions {
   readonly runtime: MercyRuntime;
 }
@@ -52,4 +54,8 @@ export interface MercyClient {
   listGroups(
     projectId: string
   ): Promise<readonly ActionGroup[]>;
+}
+
+export interface MercyClientConfig {
+  readonly transport: MercyTransport;
 }
