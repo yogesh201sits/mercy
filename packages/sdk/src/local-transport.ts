@@ -8,71 +8,69 @@ import type {
   UndoResult,
 } from "@mercy/core";
 
+import type { MercyRuntime } from "@mercy/runtime";
+
 import type { MercyTransport } from "./transport";
 
-export interface MercyClientOptions {
-  readonly transport: MercyTransport;
-}
+export class LocalRuntimeTransport implements MercyTransport {
+  private readonly runtime: MercyRuntime;
 
-export class MercyClient {
-  private readonly transport: MercyTransport;
-
-  constructor(options: MercyClientOptions) {
-    this.transport = options.transport;
+  constructor(runtime: MercyRuntime) {
+    this.runtime = runtime;
   }
 
   execute(
     input: ActionInput,
     groupId?: string,
   ): Promise<ActionResult> {
-    return this.transport.execute(input, groupId);
+    return this.runtime.execute(input, groupId);
   }
 
   undo(
     actionId: string,
   ): Promise<UndoResult> {
-    return this.transport.undo(actionId);
+    return this.runtime.undo(actionId);
   }
 
   getAction(
     actionId: string,
   ): Promise<Action | null> {
-    return this.transport.getAction(actionId);
+    return this.runtime.getAction(actionId);
   }
 
   listActions(
     projectId: string,
   ): Promise<readonly Action[]> {
-    return this.transport.listActions(projectId);
+    return this.runtime.listActions(projectId);
   }
 
   startGroup(
     input: ActionGroupInput,
   ): Promise<ActionGroup> {
-    return this.transport.startGroup(input);
+    return this.runtime.startGroup(input);
   }
 
   completeGroup(
     groupId: string,
   ): Promise<ActionGroup> {
-    return this.transport.completeGroup(groupId);
+    return this.runtime.completeGroup(groupId);
   }
 
   undoGroup(
     groupId: string,
   ): Promise<GroupUndoResult> {
-    return this.transport.undoGroup(groupId);
+    return this.runtime.undoGroup(groupId);
   }
 
   getGroup(
     groupId: string,
   ): Promise<ActionGroup> {
-    return this.transport.getGroup(groupId);
+    return this.runtime.getGroup(groupId);
   }
 
   listGroups(
     projectId: string,
   ): Promise<readonly ActionGroup[]> {
-    return this.transport.listGroups(projectId);
+    return this.runtime.listGroups(projectId);
   }
 }
