@@ -106,6 +106,14 @@
         "@mercy/undo": "workspace:*",
       },
     },
+    "packages/sdk": {
+      "name": "@mercy/sdk",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mercy/core": "workspace:*",
+        "@mercy/runtime": "workspace:*",
+      },
+    },
     "packages/shared": {
       "name": "@mercy/shared",
       "version": "0.1.0",
@@ -185,6 +193,8 @@
     "@mercy/postgres-adapter": ["@mercy/postgres-adapter@workspace:packages/postgres-adapter"],
 
     "@mercy/runtime": ["@mercy/runtime@workspace:packages/runtime"],
+
+    "@mercy/sdk": ["@mercy/sdk@workspace:packages/sdk"],
 
     "@mercy/shared": ["@mercy/shared@workspace:packages/shared"],
 
