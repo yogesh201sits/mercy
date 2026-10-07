@@ -208,6 +208,8 @@ export class FilesystemAdapter
               input.target
             );
 
+          await mkdirParent(path);
+
           await writeFile(
             path,
             content,
