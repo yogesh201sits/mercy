@@ -39,6 +39,13 @@ export class FilesystemAdapter
   canHandle(
     input: ActionInput
   ): boolean {
+    if (
+      typeof input.metadata?.["primaryKey"] ===
+        "string"
+    ) {
+      return false;
+    }
+
     return [
       "create",
       "update",

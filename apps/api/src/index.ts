@@ -1,12 +1,30 @@
-import { Hono } from "hono";
+import { serve } from "bun";
 
-const app = new Hono();
+import {
+  createApp,
+} from "./app";
 
-app.get("/health", (c) => {
-  return c.json({
-    status: "ok",
-    service: "mercy-api",
+import {
+  createMercyRuntime,
+} from "./runtime";
+
+const services =
+  createMercyRuntime();
+
+const app =
+  createApp({
+    runtime: services.runtime,
   });
+
+const port = Number(
+  process.env["PORT"] ?? 3000,
+);
+
+serve({
+  fetch: app.fetch,
+  port,
 });
 
-export default app;
+console.log(
+  `Mercy API running on http://localhost:${port}`,
+);

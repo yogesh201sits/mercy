@@ -22,10 +22,17 @@
       "name": "@mercy/api",
       "version": "0.1.0",
       "dependencies": {
+        "@mercy/filesystem": "workspace:*",
         "@mercy/postgres": "workspace:*",
+        "@mercy/postgres-adapter": "workspace:*",
         "@mercy/runtime": "workspace:*",
         "@mercy/shared": "workspace:*",
+        "@mercy/snapshots": "workspace:*",
         "hono": "^4.13.13",
+        "pg": "^8.16.3",
+      },
+      "devDependencies": {
+        "@types/pg": "^8.23.1",
       },
     },
     "packages/core": {
