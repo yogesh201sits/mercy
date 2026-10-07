@@ -1,3 +1,5 @@
+import { MercyHttpError } from "./error";
+
 export {
   MercyClient,
 } from "./client";
@@ -19,3 +21,5 @@ export {
 export {
   type MercyClientConfig,
 } from "./types";
+
+export {MercyHttpError} from "./error";
