@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@mercy/sdk": "workspace:*",
+    "@mercy/core": "workspace:*",
     "framer-motion": "^14.0.0",
     "motion": "^14.0.0",
     "next": "16.4.0",

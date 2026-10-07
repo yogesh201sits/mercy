@@ -39,6 +39,7 @@
       "name": "@mercy/dashboard",
       "version": "0.1.0",
       "dependencies": {
+        "@mercy/core": "workspace:*",
         "@mercy/sdk": "workspace:*",
         "framer-motion": "^14.0.0",
         "motion": "^14.0.0",
