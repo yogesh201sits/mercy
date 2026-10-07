@@ -42,6 +42,13 @@
         "@mercy/shared": "workspace:*",
       },
     },
+    "packages/custom-adapter": {
+      "name": "@mercy/custom-adapter",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mercy/core": "workspace:*",
+      },
+    },
     "packages/filesystem": {
       "name": "@mercy/filesystem",
       "version": "0.1.0",
@@ -166,6 +173,8 @@
     "@mercy/api": ["@mercy/api@workspace:apps/api"],
 
     "@mercy/core": ["@mercy/core@workspace:packages/core"],
+
+    "@mercy/custom-adapter": ["@mercy/custom-adapter@workspace:packages/custom-adapter"],
 
     "@mercy/filesystem": ["@mercy/filesystem@workspace:packages/filesystem"],
 
