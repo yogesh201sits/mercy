@@ -10,6 +10,8 @@ import {
   LocalSnapshotStorage,
 } from "@mercy/snapshots";
 
+import "dotenv/config";
+
 import {
   createPrismaClient,
   PostgresActionJournal,
@@ -29,8 +31,7 @@ import {
 // =============================================================
 
 const databaseUrl =
-  process.env["CLIENT_DATABASE_URL"] ??
-  process.env["DATABASE_URL"];
+  process.env["CLIENT_DATABASE_URL"]
 
 if (!databaseUrl) {
   throw new Error(
