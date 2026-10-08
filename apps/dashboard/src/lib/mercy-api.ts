@@ -1,217 +1,229 @@
 import type {
-  Action,
-  ActionGroup,
-  GroupUndoResult,
-  UndoResult,
+Action,
+ActionGroup,
+GroupUndoResult,
+UndoResult,
 } from "@mercy/core";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_MERCY_API_URL ??
-  "http://localhost:3000";
+process.env.NEXT_PUBLIC_MERCY_API_URL ??
+"http://localhost:3000";
 
 export class MercyApiError extends Error {
-  readonly status: number;
+readonly status: number;
 
-  constructor(
-    message: string,
-    status: number,
-  ) {
-    super(message);
-    this.name = "MercyApiError";
-    this.status = status;
-  }
+constructor(
+message: string,
+status: number,
+) {
+super(message);
+this.name = "MercyApiError";
+this.status = status;
+}
 }
 
 export interface Project {
-  readonly id: string;
-  readonly name: string;
-  readonly clerkUserId: string;
-  readonly createdAt: string;
-  readonly updatedAt: string;
+readonly id: string;
+readonly name: string;
+readonly clerkUserId: string;
+readonly createdAt: string;
+readonly updatedAt: string;
 }
 
 export interface CreateProjectInput {
-  readonly name: string;
+readonly name: string;
 }
 
-interface RequestOptions
-  extends RequestInit {
-  token?: string | undefined;
+interface RequestOptions extends RequestInit {
+token?: string | undefined;
 }
 
 async function request<T>(
-  path: string,
-  init?: RequestOptions,
+path: string,
+init?: RequestOptions,
 ): Promise<T> {
-  const token = init?.token;
+const token = init?.token;
 
-  const headers = new Headers(
-    init?.headers,
-  );
+const headers = new Headers(
+init?.headers,
+);
 
-  headers.set(
-    "Content-Type",
-    "application/json",
-  );
+headers.set(
+"Content-Type",
+"application/json",
+);
 
-  if (token) {
-    headers.set(
-      "Authorization",
-      `Bearer ${token}`,
-    );
-  }
+if (token) {
+headers.set(
+"Authorization",
+`Bearer ${token}`,
+);
+}
 
-  const response = await fetch(
-    `${API_URL}${path}`,
-    {
-      ...init,
-      headers,
-      cache: "no-store",
-    },
-  );
+const response = await fetch(
+`${API_URL}${path}`,
+{
+...init,
+headers,
+cache: "no-store",
+},
+);
 
-  if (!response.ok) {
-    let message =
-      `Mercy API request failed with status ${response.status}`;
+if (!response.ok) {
+let message =
+`Mercy API request failed with status ${response.status}`;
 
-    try {
-      const body = (await response.json()) as {
-        error?: string;
-        message?: string;
-      };
 
-      message =
-        body.error ??
-        body.message ??
-        message;
-    } catch {
-      // Keep default error message.
-    }
+try {
+  const body = (await response.json()) as {
+    error?: string;
+    message?: string;
+  };
 
-    throw new MercyApiError(
-      message,
-      response.status,
-    );
-  }
+  message =
+    body.error ??
+    body.message ??
+    message;
+} catch {
+  // Keep default error message.
+}
 
-  return response.json() as Promise<T>;
+throw new MercyApiError(
+  message,
+  response.status,
+);
+
+
+}
+
+return response.json() as Promise<T>;
 }
 
 export async function listProjects(
-  token: string,
+token: string,
 ): Promise<readonly Project[]> {
-  return request<readonly Project[]>(
-    "/projects",
-    { token },
-  );
+return request<readonly Project[]>(
+"/projects",
+{ token },
+);
 }
 
 export async function createProject(
-  input: CreateProjectInput,
-  token: string,
+input: CreateProjectInput,
+token: string,
 ): Promise<Project> {
-  return request<Project>(
-    "/projects",
-    {
-      method: "POST",
-      token,
-      body: JSON.stringify(input),
-    },
-  );
+return request<Project>(
+"/projects",
+{
+method: "POST",
+token,
+body: JSON.stringify(input),
+},
+);
 }
 
 export async function getProject(
-  projectId: string,
-  token: string,
+projectId: string,
+token: string,
 ): Promise<Project> {
-  return request<Project>(
-    `/projects/${encodeURIComponent(projectId)}`,
-    { token },
-  );
+return request<Project>(
+`/projects/${encodeURIComponent(projectId)}`,
+{ token },
+);
 }
 
+/*
+
+* Dashboard actions
+  */
+
 export async function listActions(
-  projectId: string,
-  token?: string,
+projectId: string,
+token?: string,
 ): Promise<readonly Action[]> {
-  return request<readonly Action[]>(
-    `/dashboard/projects/${encodeURIComponent(projectId)}/actions`,
-    { token },
-  );
+return request<readonly Action[]>(
+`/dashboard/projects/${encodeURIComponent(projectId)}/actions`,
+{ token },
+);
 }
 
 export async function getAction(
-  actionId: string,
-  token?: string,
+actionId: string,
+token?: string,
 ): Promise<Action | null> {
-  return request<Action | null>(
-    `/dashboard/actions/${encodeURIComponent(actionId)}`,
-    { token },
-  );
+return request<Action | null>(
+`/dashboard/actions/${encodeURIComponent(actionId)}`,
+{ token },
+);
 }
 
 export async function undoAction(
-  actionId: string,
-  token?: string,
+actionId: string,
+token?: string,
 ): Promise<UndoResult> {
-  return request<UndoResult>(
-    `/dashboard/actions/${encodeURIComponent(actionId)}/undo`,
-    {
-      method: "POST",
-      token,
-    },
-  );
+return request<UndoResult>(
+`/dashboard/actions/${encodeURIComponent(actionId)}/undo`,
+{
+method: "POST",
+token,
+},
+);
 }
 
+/*
+
+* Dashboard groups
+  */
+
 export async function listGroups(
-  projectId: string,
-  token?: string,
+projectId: string,
+token?: string,
 ): Promise<readonly ActionGroup[]> {
-  return request<readonly ActionGroup[]>(
-    `/projects/${encodeURIComponent(projectId)}/groups`,
-    { token },
-  );
+return request<readonly ActionGroup[]>(
+`/dashboard/projects/${encodeURIComponent(projectId)}/groups`,
+{ token },
+);
 }
 
 export async function getGroup(
-  groupId: string,
-  token?: string,
+groupId: string,
+token?: string,
 ): Promise<ActionGroup> {
-  return request<ActionGroup>(
-    `/groups/${encodeURIComponent(groupId)}`,
-    { token },
-  );
+return request<ActionGroup>(
+`/dashboard/groups/${encodeURIComponent(groupId)}`,
+{ token },
+);
 }
 
 export async function undoGroup(
-  groupId: string,
-  token?: string,
+groupId: string,
+token?: string,
 ): Promise<GroupUndoResult> {
-  return request<GroupUndoResult>(
-    `/groups/${encodeURIComponent(groupId)}/undo`,
-    {
-      method: "POST",
-      token,
-    },
-  );
+return request<GroupUndoResult>(
+`/dashboard/groups/${encodeURIComponent(groupId)}/undo`,
+{
+method: "POST",
+token,
+},
+);
 }
 
 export async function completeGroup(
-  groupId: string,
-  token?: string,
+groupId: string,
+token?: string,
 ): Promise<ActionGroup> {
-  return request<ActionGroup>(
-    `/groups/${encodeURIComponent(groupId)}/complete`,
-    {
-      method: "POST",
-      token,
-    },
-  );
+return request<ActionGroup>(
+`/dashboard/groups/${encodeURIComponent(groupId)}/complete`,
+{
+method: "POST",
+token,
+},
+);
 }
 
 export async function health(): Promise<{
-  readonly status: string;
-  readonly service: string;
+readonly status: string;
+readonly service: string;
 }> {
-  return request("/health");
+return request("/health");
 }

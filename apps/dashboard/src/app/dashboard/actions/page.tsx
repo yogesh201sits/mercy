@@ -1,8 +1,16 @@
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
 
-import { listActions } from "@/lib/mercy-api";
+import {
+  listActions,
+  listProjects,
+} from "@/lib/mercy-api";
 
-const PROJECT_ID = "real-db-ab69cf62-0912-4d9e-8e36-780bcc3665aa";
+interface ActionsPageProps {
+  searchParams: Promise<{
+    project?: string;
+  }>;
+}
 
 function StatusBadge({ status }: { status: string }) {
   const positive =
@@ -48,9 +56,47 @@ function formatRelativeTime(date: Date): string {
   return `${days}d ago`;
 }
 
-export default async function ActionsPage() {
-  const actions = await listActions(PROJECT_ID);
-  console.log(actions)
+export default async function ActionsPage({
+  searchParams,
+}: ActionsPageProps) {
+  const { getToken } = await auth();
+
+  const token = await getToken();
+
+  if (!token) {
+    throw new Error(
+      "Unable to authenticate with Mercy API.",
+    );
+  }
+
+  const projects = await listProjects(token);
+
+  if (projects.length === 0) {
+    return (
+      <div className="p-6">
+        <p className="text-sm text-black/50">
+          No projects found.
+        </p>
+      </div>
+    );
+  }
+
+  const params = await searchParams;
+
+  const requestedProjectId = params.project;
+
+  const project =
+    projects.find(
+      (item) => item.id === requestedProjectId,
+    ) ?? projects[0];
+
+  const projectId = project.id;
+
+  // Clerk token is required here.
+  const actions = await listActions(
+    projectId,
+    token,
+  );
 
   const completed = actions.filter(
     (action) => action.status === "completed",
@@ -87,7 +133,7 @@ export default async function ActionsPage() {
           </div>
 
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-black/35">
-            project / {PROJECT_ID}
+            project / {projectId}
           </div>
         </div>
       </div>
@@ -227,7 +273,9 @@ export default async function ActionsPage() {
                   </p>
 
                   <p className="text-right font-mono text-[10px] text-black/35">
-                    {formatRelativeTime(new Date(action.createdAt))}
+                    {formatRelativeTime(
+                      new Date(action.createdAt),
+                    )}
                   </p>
                 </div>
 
@@ -274,7 +322,9 @@ export default async function ActionsPage() {
                       </p>
 
                       <p className="mt-2 font-mono text-xs text-black/55">
-                        {action.beforeSnapshotId ? "YES" : "—"}
+                        {action.beforeSnapshotId
+                          ? "YES"
+                          : "—"}
                       </p>
                     </div>
                   </div>

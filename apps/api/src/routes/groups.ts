@@ -5,7 +5,9 @@ import type {
   PostgresApiKeyStore,
 } from "@mercy/postgres";
 
-import type { MercyRuntime } from "@mercy/runtime";
+import type {
+  MercyRuntime,
+} from "@mercy/runtime";
 
 import type {
   MercyEnv,
@@ -29,10 +31,11 @@ export function createGroupRoutes(
   const app = new Hono<MercyEnv>();
 
   /*
-   * Create group
-   *
-   * POST /projects/:projectId/groups
-   */
+  
+  * Create group
+  *
+  * POST /projects/:projectId/groups
+    */
   app.post(
     "/projects/:projectId/groups",
     requireApiKey(apiKeys),
@@ -51,11 +54,13 @@ export function createGroupRoutes(
         return c.json(
           {
             error: "Invalid group input",
-            details: parsed.error.flatten(),
+            details:
+              parsed.error.flatten(),
           },
           400,
         );
       }
+
       if (!projectId) {
         return c.json(
           {
@@ -87,10 +92,11 @@ export function createGroupRoutes(
   );
 
   /*
-   * List groups
-   *
-   * GET /projects/:projectId/groups
-   */
+  
+  * List groups
+  *
+  * GET /projects/:projectId/groups
+    */
   app.get(
     "/projects/:projectId/groups",
     requireApiKey(apiKeys),
@@ -98,10 +104,11 @@ export function createGroupRoutes(
     async (c) => {
       const projectId =
         c.req.param("projectId");
+
       if (!projectId) {
         return c.json(
           {
-            error: "Invalid group input",
+            error: "Project ID is required",
           },
           400,
         );
@@ -129,20 +136,22 @@ export function createGroupRoutes(
   );
 
   /*
-   * Get group
-   *
-   * GET /groups/:groupId
-   */
+  
+  * Get group
+  *
+  * GET /groups/:groupId
+    */
   app.get(
     "/groups/:groupId",
     requireApiKey(apiKeys),
     async (c) => {
       const groupId =
         c.req.param("groupId");
+
       if (!groupId) {
         return c.json(
           {
-            error: "Group id required",
+            error: "Group ID is required",
           },
           400,
         );
@@ -156,6 +165,16 @@ export function createGroupRoutes(
           await runtime.getGroup(
             groupId,
           );
+
+        if (!group) {
+          return c.json(
+            {
+              error: "Not Found",
+              message: "Group not found",
+            },
+            404,
+          );
+        }
 
         if (
           group.projectId !==
@@ -180,28 +199,29 @@ export function createGroupRoutes(
                 ? error.message
                 : String(error),
           },
-          404,
+          500,
         );
       }
     },
   );
 
   /*
-   * Complete group
-   *
-   * POST /groups/:groupId/complete
-   */
+  
+  * Complete group
+  *
+  * POST /groups/:groupId/complete
+    */
   app.post(
     "/groups/:groupId/complete",
     requireApiKey(apiKeys),
     async (c) => {
       const groupId =
         c.req.param("groupId");
-      
+
       if (!groupId) {
         return c.json(
           {
-            error: "Group id required",
+            error: "Group ID is required",
           },
           400,
         );
@@ -215,6 +235,16 @@ export function createGroupRoutes(
           await runtime.getGroup(
             groupId,
           );
+
+        if (!group) {
+          return c.json(
+            {
+              error: "Not Found",
+              message: "Group not found",
+            },
+            404,
+          );
+        }
 
         if (
           group.projectId !==
@@ -254,10 +284,11 @@ export function createGroupRoutes(
   );
 
   /*
-   * Undo group
-   *
-   * POST /groups/:groupId/undo
-   */
+  
+  * Undo group
+  *
+  * POST /groups/:groupId/undo
+    */
   app.post(
     "/groups/:groupId/undo",
     requireApiKey(apiKeys),
@@ -265,23 +296,33 @@ export function createGroupRoutes(
       const groupId =
         c.req.param("groupId");
 
-      const auth =
-        c.get(apiKeyAuthKey);
-
       if (!groupId) {
         return c.json(
           {
-            error: "Group id required",
+            error: "Group ID is required",
           },
           400,
         );
       }
+
+      const auth =
+        c.get(apiKeyAuthKey);
 
       try {
         const group =
           await runtime.getGroup(
             groupId,
           );
+
+        if (!group) {
+          return c.json(
+            {
+              error: "Not Found",
+              message: "Group not found",
+            },
+            404,
+          );
+        }
 
         if (
           group.projectId !==
@@ -305,11 +346,16 @@ export function createGroupRoutes(
         if (!result.success) {
           return c.json(
             result,
-            result.conflict ? 409 : 422,
+            result.conflict
+              ? 409
+              : 422,
           );
         }
 
-        return c.json(result, 200);
+        return c.json(
+          result,
+          200,
+        );
       } catch (error) {
         return c.json(
           {

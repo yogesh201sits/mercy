@@ -1,79 +1,153 @@
+import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 
-import { listGroups } from "@/lib/mercy-api";
+import {
+  listGroups,
+  listProjects,
+} from "@/lib/mercy-api";
 
-const PROJECT_ID = "default";
+interface GroupsPageProps {
+  searchParams: Promise<{
+    project?: string;
+  }>;
+}
 
 function formatRelativeTime(date: Date): string {
-const diff = Date.now() - date.getTime();
-const seconds = Math.floor(diff / 1000);
+  const diff = Date.now() - date.getTime();
+  const seconds = Math.floor(diff / 1000);
 
-if (seconds < 60) {
-return `${seconds}s ago`;
-}
+  if (seconds < 60) {
+    return `${seconds}s ago`;
+  }
 
-const minutes = Math.floor(seconds / 60);
+  const minutes = Math.floor(seconds / 60);
 
-if (minutes < 60) {
-return `${minutes}m ago`;
-}
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
 
-const hours = Math.floor(minutes / 60);
+  const hours = Math.floor(minutes / 60);
 
-if (hours < 24) {
-return `${hours}h ago`;
-}
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
 
-const days = Math.floor(hours / 24);
+  const days = Math.floor(hours / 24);
 
-return `${days}d ago`;
+  return `${days}d ago`;
 }
 
 function statusClass(status: string): string {
-switch (status) {
-case "completed":
-return "border-[#39FF14]/40 bg-[#39FF14]/10 text-black";
+  switch (status) {
+    case "completed":
+      return "border-[#39FF14]/40 bg-[#39FF14]/10 text-black";
 
-case "undone":
-  return "border-black/15 bg-black/[0.03] text-black/60";
+    case "undone":
+      return "border-black/15 bg-black/[0.03] text-black/60";
 
-case "failed":
-case "undo_failed":
-  return "border-black/20 bg-black/[0.04] text-black";
+    case "failed":
+    case "undo_failed":
+      return "border-black/20 bg-black/[0.04] text-black";
 
-default:
-  return "border-black/10 bg-white text-black/60";
+    default:
+      return "border-black/10 bg-white text-black/60";
 
+  }
 }
-}
 
-export default async function GroupsPage() {
-const groups = await listGroups(PROJECT_ID);
+export default async function GroupsPage({
+  searchParams,
+}: GroupsPageProps) {
+  const { getToken } = await auth();
 
-const completed = groups.filter(
-(group) => group.status === "completed",
-).length;
+  const token = await getToken();
 
-const undone = groups.filter(
-(group) => group.status === "undone",
-).length;
+  if (!token) {
+    throw new Error(
+      "Unable to authenticate with Mercy API.",
+    );
+  }
 
-return ( <div className="p-6 lg:p-8"> <div className="mx-auto max-w-7xl"> <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"> <div> <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-black/40">
-Recovery groups </p>
+  const projects =
+    await listProjects(token);
 
-        <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em]">
-          Groups
-        </h1>
+  /*
+  
+  * No projects
+    */
+  if (projects.length === 0) {
+    return (
 
-        <p className="mt-2 max-w-xl text-sm leading-6 text-black/50">
-          Related actions grouped into a single recoverable operation.
-        </p>
+      <div className="p-6 lg:p-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="border border-black/10 bg-white px-5 py-16 text-center">
+            <div className="mx-auto h-2 w-2 bg-[#39FF14]" />
+
+            <p className="mt-5 text-sm font-medium">
+              No projects yet
+            </p>
+
+            <p className="mt-2 text-sm text-black/40">
+              Create a project before viewing recovery groups.
+            </p>
+          </div>
+
+        </div>
       </div>
 
-      <div className="font-mono text-xs text-black/40">
-        project: <span className="text-black">{PROJECT_ID}</span>
-      </div>
+    );
+
+  }
+
+  const params =
+    await searchParams;
+
+  const requestedProjectId =
+    params.project;
+
+  const project =
+    projects.find(
+      (item) =>
+        item.id === requestedProjectId,
+    ) ?? projects[0];
+
+  const projectId =
+    project.id;
+
+  const groups =
+    await listGroups(
+      projectId,
+      token,
+    );
+
+  const completed =
+    groups.filter(
+      (group) =>
+        group.status === "completed",
+    ).length;
+
+  const undone =
+    groups.filter(
+      (group) =>
+        group.status === "undone",
+    ).length;
+
+  return (<div className="p-6 lg:p-8"> <div className="mx-auto max-w-7xl"> <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"> <div> <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-black/40">
+    Recovery groups </p>
+
+    <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em]">
+      Groups
+    </h1>
+
+    <p className="mt-2 max-w-xl text-sm leading-6 text-black/50">
+      Related actions grouped into a single recoverable operation.
+    </p>
+  </div>
+
+    <div className="font-mono text-xs text-black/40">
+      project: <span className="text-black">{projectId}</span>
     </div>
+  </div>
 
     <div className="mb-6 grid grid-cols-1 border border-black/10 bg-white sm:grid-cols-3">
       <div className="border-b border-black/10 p-5 sm:border-b-0 sm:border-r">
@@ -193,6 +267,6 @@ Recovery groups </p>
       )}
     </div>
   </div>
-</div>
-);
+  </div>
+  );
 }

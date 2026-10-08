@@ -53,8 +53,14 @@ function statusClass(status: string): string {
       return "border-black/10 bg-white text-black/60";
   }
 }
-
-export default async function DashboardPage() {
+interface DashboardPageProps {
+  searchParams: Promise<{
+    project?: string;
+  }>;
+}
+export default async function DashboardPage({
+  searchParams,
+}: DashboardPageProps) {
   
   const { getToken } = await auth();
 
@@ -74,7 +80,18 @@ export default async function DashboardPage() {
   );
 }
 
-  const project = projects[0];
+ 
+
+  const params = await searchParams;
+
+  const requestedProjectId =
+    params.project;
+
+  const project =
+    projects.find(
+      (item) =>
+        item.id === requestedProjectId,
+    ) ?? projects[0];
 
   PROJECT_ID = project.id;
 
