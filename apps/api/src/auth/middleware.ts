@@ -14,6 +14,15 @@ const secretKey =
 const publishableKey =
   process.env.CLERK_PUBLISHABLE_KEY;
 
+const authorizedParties =
+  process.env.CLERK_AUTHORIZED_PARTIES
+    ?.split(",")
+    .map((party) => party.trim())
+    .filter(Boolean) ?? [
+    "http://localhost:3000",
+    "http://localhost:3001",
+  ];
+
 if (!secretKey) {
   throw new Error(
     "CLERK_SECRET_KEY is not configured",
@@ -23,6 +32,12 @@ if (!secretKey) {
 if (!publishableKey) {
   throw new Error(
     "CLERK_PUBLISHABLE_KEY is not configured",
+  );
+}
+
+if (authorizedParties.length === 0) {
+  throw new Error(
+    "CLERK_AUTHORIZED_PARTIES must contain at least one origin",
   );
 }
 
@@ -49,9 +64,7 @@ export async function requireClerkAuth(
       await clerkClient.authenticateRequest(
         c.req.raw,
         {
-          authorizedParties: [
-            "http://localhost:3000",
-          ],
+          authorizedParties,
         },
       );
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { UserButton } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 
 const titles: Record<string, string> = {
@@ -38,7 +39,7 @@ export function Topbar() {
         </p>
       </div>
 
-      {/* Runtime / project */}
+      {/* Runtime / project / user */}
       <div className="flex items-center gap-5">
         <div className="hidden items-center gap-2 sm:flex">
           <span className="h-1.5 w-1.5 bg-[#39FF14]" />
@@ -57,6 +58,16 @@ export function Topbar() {
           <span className="h-1.5 w-1.5 bg-[#39FF14]" />
           default
         </button>
+
+        <div className="h-7 w-px bg-black/10" />
+
+        <UserButton
+          appearance={{
+            elements: {
+              avatarBox: "h-8 w-8",
+            },
+          }}
+        />
       </div>
     </header>
   );

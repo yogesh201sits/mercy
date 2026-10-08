@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 
 import type {
   PostgresApiKeyStore,
@@ -22,6 +23,10 @@ import {
 } from "./routes/api-keys";
 
 import {
+  createDashboardRoutes,
+} from "./routes/dashboard";
+
+import {
   createGroupRoutes,
 } from "./routes/groups";
 
@@ -38,15 +43,35 @@ export interface MercyApiDependencies {
 export function createApp(
   dependencies: MercyApiDependencies,
 ) {
-  const app = new Hono<MercyEnv>();
+  const app =
+    new Hono<MercyEnv>();
 
   /*
-   * Health check
-   *
-   * GET /health
-   *
-   * Public endpoint.
+   * CORS
    */
+  app.use(
+    "*",
+    cors({
+      origin: [
+        "http://localhost:3000",
+        "http://localhost:3001",
+      ],
+      allowMethods: [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS",
+      ],
+      allowHeaders: [
+        "Content-Type",
+        "Authorization",
+      ],
+      credentials: true,
+    }),
+  );
+
   app.get(
     "/health",
     (c) => {
@@ -58,9 +83,7 @@ export function createApp(
   );
 
   /*
-   * Project routes
-   *
-   * Clerk authenticated.
+   * Human / dashboard routes
    */
   app.route(
     "/",
@@ -69,10 +92,16 @@ export function createApp(
     ),
   );
 
+  app.route(
+    "/",
+    createDashboardRoutes(
+      dependencies.runtime,
+      dependencies.projects,
+    ),
+  );
+
   /*
-   * API key management routes
-   *
-   * Clerk authenticated.
+   * Agent API routes
    */
   app.route(
     "/",
@@ -82,11 +111,6 @@ export function createApp(
     ),
   );
 
-  /*
-   * Action routes
-   *
-   * API-key authenticated.
-   */
   app.route(
     "/",
     createActionRoutes(
@@ -95,11 +119,6 @@ export function createApp(
     ),
   );
 
-  /*
-   * Group routes
-   *
-   * API-key authenticated.
-   */
   app.route(
     "/",
     createGroupRoutes(
