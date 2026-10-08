@@ -8,6 +8,8 @@
  *
  * 🟢 You can import this file directly.
  */
+export type * from './models/Project'
+export type * from './models/ApiKey'
 export type * from './models/Action'
 export type * from './models/ActionGroup'
 export type * from './models/ActionGroupAction'

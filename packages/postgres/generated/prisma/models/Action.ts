@@ -242,6 +242,7 @@ export type ActionWhereInput = {
   metadata?: Prisma.JsonNullableFilter<"Action">
   result?: Prisma.JsonNullableFilter<"Action">
   undoResult?: Prisma.JsonNullableFilter<"Action">
+  project?: Prisma.XOR<Prisma.ProjectScalarRelationFilter, Prisma.ProjectWhereInput>
   snapshots?: Prisma.ActionSnapshotListRelationFilter
   groupMemberships?: Prisma.ActionGroupActionListRelationFilter
 }
@@ -261,6 +262,7 @@ export type ActionOrderByWithRelationInput = {
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
   result?: Prisma.SortOrderInput | Prisma.SortOrder
   undoResult?: Prisma.SortOrderInput | Prisma.SortOrder
+  project?: Prisma.ProjectOrderByWithRelationInput
   snapshots?: Prisma.ActionSnapshotOrderByRelationAggregateInput
   groupMemberships?: Prisma.ActionGroupActionOrderByRelationAggregateInput
 }
@@ -283,6 +285,7 @@ export type ActionWhereUniqueInput = Prisma.AtLeast<{
   metadata?: Prisma.JsonNullableFilter<"Action">
   result?: Prisma.JsonNullableFilter<"Action">
   undoResult?: Prisma.JsonNullableFilter<"Action">
+  project?: Prisma.XOR<Prisma.ProjectScalarRelationFilter, Prisma.ProjectWhereInput>
   snapshots?: Prisma.ActionSnapshotListRelationFilter
   groupMemberships?: Prisma.ActionGroupActionListRelationFilter
 }, "id">
@@ -329,7 +332,6 @@ export type ActionScalarWhereWithAggregatesInput = {
 
 export type ActionCreateInput = {
   id: string
-  projectId: string
   type: string
   target: string
   status: string
@@ -342,6 +344,7 @@ export type ActionCreateInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  project: Prisma.ProjectCreateNestedOneWithoutActionsInput
   snapshots?: Prisma.ActionSnapshotCreateNestedManyWithoutActionInput
   groupMemberships?: Prisma.ActionGroupActionCreateNestedManyWithoutActionInput
 }
@@ -367,7 +370,6 @@ export type ActionUncheckedCreateInput = {
 
 export type ActionUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  projectId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   target?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -380,6 +382,7 @@ export type ActionUpdateInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  project?: Prisma.ProjectUpdateOneRequiredWithoutActionsNestedInput
   snapshots?: Prisma.ActionSnapshotUpdateManyWithoutActionNestedInput
   groupMemberships?: Prisma.ActionGroupActionUpdateManyWithoutActionNestedInput
 }
@@ -422,7 +425,6 @@ export type ActionCreateManyInput = {
 
 export type ActionUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  projectId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   target?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -452,6 +454,16 @@ export type ActionUncheckedUpdateManyInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+}
+
+export type ActionListRelationFilter = {
+  every?: Prisma.ActionWhereInput
+  some?: Prisma.ActionWhereInput
+  none?: Prisma.ActionWhereInput
+}
+
+export type ActionOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type ActionCountOrderByAggregateInput = {
@@ -504,16 +516,46 @@ export type ActionScalarRelationFilter = {
   isNot?: Prisma.ActionWhereInput
 }
 
-export type StringFieldUpdateOperationsInput = {
-  set?: string
+export type ActionCreateNestedManyWithoutProjectInput = {
+  create?: Prisma.XOR<Prisma.ActionCreateWithoutProjectInput, Prisma.ActionUncheckedCreateWithoutProjectInput> | Prisma.ActionCreateWithoutProjectInput[] | Prisma.ActionUncheckedCreateWithoutProjectInput[]
+  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutProjectInput | Prisma.ActionCreateOrConnectWithoutProjectInput[]
+  createMany?: Prisma.ActionCreateManyProjectInputEnvelope
+  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
 }
 
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
+export type ActionUncheckedCreateNestedManyWithoutProjectInput = {
+  create?: Prisma.XOR<Prisma.ActionCreateWithoutProjectInput, Prisma.ActionUncheckedCreateWithoutProjectInput> | Prisma.ActionCreateWithoutProjectInput[] | Prisma.ActionUncheckedCreateWithoutProjectInput[]
+  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutProjectInput | Prisma.ActionCreateOrConnectWithoutProjectInput[]
+  createMany?: Prisma.ActionCreateManyProjectInputEnvelope
+  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
+export type ActionUpdateManyWithoutProjectNestedInput = {
+  create?: Prisma.XOR<Prisma.ActionCreateWithoutProjectInput, Prisma.ActionUncheckedCreateWithoutProjectInput> | Prisma.ActionCreateWithoutProjectInput[] | Prisma.ActionUncheckedCreateWithoutProjectInput[]
+  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutProjectInput | Prisma.ActionCreateOrConnectWithoutProjectInput[]
+  upsert?: Prisma.ActionUpsertWithWhereUniqueWithoutProjectInput | Prisma.ActionUpsertWithWhereUniqueWithoutProjectInput[]
+  createMany?: Prisma.ActionCreateManyProjectInputEnvelope
+  set?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  disconnect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  delete?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  update?: Prisma.ActionUpdateWithWhereUniqueWithoutProjectInput | Prisma.ActionUpdateWithWhereUniqueWithoutProjectInput[]
+  updateMany?: Prisma.ActionUpdateManyWithWhereWithoutProjectInput | Prisma.ActionUpdateManyWithWhereWithoutProjectInput[]
+  deleteMany?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
+}
+
+export type ActionUncheckedUpdateManyWithoutProjectNestedInput = {
+  create?: Prisma.XOR<Prisma.ActionCreateWithoutProjectInput, Prisma.ActionUncheckedCreateWithoutProjectInput> | Prisma.ActionCreateWithoutProjectInput[] | Prisma.ActionUncheckedCreateWithoutProjectInput[]
+  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutProjectInput | Prisma.ActionCreateOrConnectWithoutProjectInput[]
+  upsert?: Prisma.ActionUpsertWithWhereUniqueWithoutProjectInput | Prisma.ActionUpsertWithWhereUniqueWithoutProjectInput[]
+  createMany?: Prisma.ActionCreateManyProjectInputEnvelope
+  set?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  disconnect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  delete?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  update?: Prisma.ActionUpdateWithWhereUniqueWithoutProjectInput | Prisma.ActionUpdateWithWhereUniqueWithoutProjectInput[]
+  updateMany?: Prisma.ActionUpdateManyWithWhereWithoutProjectInput | Prisma.ActionUpdateManyWithWhereWithoutProjectInput[]
+  deleteMany?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
 }
 
 export type NullableStringFieldUpdateOperationsInput = {
@@ -548,9 +590,8 @@ export type ActionUpdateOneRequiredWithoutSnapshotsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ActionUpdateToOneWithWhereWithoutSnapshotsInput, Prisma.ActionUpdateWithoutSnapshotsInput>, Prisma.ActionUncheckedUpdateWithoutSnapshotsInput>
 }
 
-export type ActionCreateWithoutGroupMembershipsInput = {
+export type ActionCreateWithoutProjectInput = {
   id: string
-  projectId: string
   type: string
   target: string
   status: string
@@ -563,6 +604,89 @@ export type ActionCreateWithoutGroupMembershipsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  snapshots?: Prisma.ActionSnapshotCreateNestedManyWithoutActionInput
+  groupMemberships?: Prisma.ActionGroupActionCreateNestedManyWithoutActionInput
+}
+
+export type ActionUncheckedCreateWithoutProjectInput = {
+  id: string
+  type: string
+  target: string
+  status: string
+  undoStrategy: string
+  createdAt?: Date | string
+  startedAt?: Date | string | null
+  completedAt?: Date | string | null
+  beforeSnapshotId?: string | null
+  afterHash?: string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  snapshots?: Prisma.ActionSnapshotUncheckedCreateNestedManyWithoutActionInput
+  groupMemberships?: Prisma.ActionGroupActionUncheckedCreateNestedManyWithoutActionInput
+}
+
+export type ActionCreateOrConnectWithoutProjectInput = {
+  where: Prisma.ActionWhereUniqueInput
+  create: Prisma.XOR<Prisma.ActionCreateWithoutProjectInput, Prisma.ActionUncheckedCreateWithoutProjectInput>
+}
+
+export type ActionCreateManyProjectInputEnvelope = {
+  data: Prisma.ActionCreateManyProjectInput | Prisma.ActionCreateManyProjectInput[]
+  skipDuplicates?: boolean
+}
+
+export type ActionUpsertWithWhereUniqueWithoutProjectInput = {
+  where: Prisma.ActionWhereUniqueInput
+  update: Prisma.XOR<Prisma.ActionUpdateWithoutProjectInput, Prisma.ActionUncheckedUpdateWithoutProjectInput>
+  create: Prisma.XOR<Prisma.ActionCreateWithoutProjectInput, Prisma.ActionUncheckedCreateWithoutProjectInput>
+}
+
+export type ActionUpdateWithWhereUniqueWithoutProjectInput = {
+  where: Prisma.ActionWhereUniqueInput
+  data: Prisma.XOR<Prisma.ActionUpdateWithoutProjectInput, Prisma.ActionUncheckedUpdateWithoutProjectInput>
+}
+
+export type ActionUpdateManyWithWhereWithoutProjectInput = {
+  where: Prisma.ActionScalarWhereInput
+  data: Prisma.XOR<Prisma.ActionUpdateManyMutationInput, Prisma.ActionUncheckedUpdateManyWithoutProjectInput>
+}
+
+export type ActionScalarWhereInput = {
+  AND?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
+  OR?: Prisma.ActionScalarWhereInput[]
+  NOT?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
+  id?: Prisma.StringFilter<"Action"> | string
+  projectId?: Prisma.StringFilter<"Action"> | string
+  type?: Prisma.StringFilter<"Action"> | string
+  target?: Prisma.StringFilter<"Action"> | string
+  status?: Prisma.StringFilter<"Action"> | string
+  undoStrategy?: Prisma.StringFilter<"Action"> | string
+  createdAt?: Prisma.DateTimeFilter<"Action"> | Date | string
+  startedAt?: Prisma.DateTimeNullableFilter<"Action"> | Date | string | null
+  completedAt?: Prisma.DateTimeNullableFilter<"Action"> | Date | string | null
+  beforeSnapshotId?: Prisma.StringNullableFilter<"Action"> | string | null
+  afterHash?: Prisma.StringNullableFilter<"Action"> | string | null
+  metadata?: Prisma.JsonNullableFilter<"Action">
+  result?: Prisma.JsonNullableFilter<"Action">
+  undoResult?: Prisma.JsonNullableFilter<"Action">
+}
+
+export type ActionCreateWithoutGroupMembershipsInput = {
+  id: string
+  type: string
+  target: string
+  status: string
+  undoStrategy: string
+  createdAt?: Date | string
+  startedAt?: Date | string | null
+  completedAt?: Date | string | null
+  beforeSnapshotId?: string | null
+  afterHash?: string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  project: Prisma.ProjectCreateNestedOneWithoutActionsInput
   snapshots?: Prisma.ActionSnapshotCreateNestedManyWithoutActionInput
 }
 
@@ -602,7 +726,6 @@ export type ActionUpdateToOneWithWhereWithoutGroupMembershipsInput = {
 
 export type ActionUpdateWithoutGroupMembershipsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  projectId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   target?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -615,6 +738,7 @@ export type ActionUpdateWithoutGroupMembershipsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  project?: Prisma.ProjectUpdateOneRequiredWithoutActionsNestedInput
   snapshots?: Prisma.ActionSnapshotUpdateManyWithoutActionNestedInput
 }
 
@@ -638,7 +762,6 @@ export type ActionUncheckedUpdateWithoutGroupMembershipsInput = {
 
 export type ActionCreateWithoutSnapshotsInput = {
   id: string
-  projectId: string
   type: string
   target: string
   status: string
@@ -651,6 +774,7 @@ export type ActionCreateWithoutSnapshotsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  project: Prisma.ProjectCreateNestedOneWithoutActionsInput
   groupMemberships?: Prisma.ActionGroupActionCreateNestedManyWithoutActionInput
 }
 
@@ -690,7 +814,6 @@ export type ActionUpdateToOneWithWhereWithoutSnapshotsInput = {
 
 export type ActionUpdateWithoutSnapshotsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  projectId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   target?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -703,6 +826,7 @@ export type ActionUpdateWithoutSnapshotsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  project?: Prisma.ProjectUpdateOneRequiredWithoutActionsNestedInput
   groupMemberships?: Prisma.ActionGroupActionUpdateManyWithoutActionNestedInput
 }
 
@@ -722,6 +846,74 @@ export type ActionUncheckedUpdateWithoutSnapshotsInput = {
   result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   groupMemberships?: Prisma.ActionGroupActionUncheckedUpdateManyWithoutActionNestedInput
+}
+
+export type ActionCreateManyProjectInput = {
+  id: string
+  type: string
+  target: string
+  status: string
+  undoStrategy: string
+  createdAt?: Date | string
+  startedAt?: Date | string | null
+  completedAt?: Date | string | null
+  beforeSnapshotId?: string | null
+  afterHash?: string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+}
+
+export type ActionUpdateWithoutProjectInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  target?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  undoStrategy?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  beforeSnapshotId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  afterHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  snapshots?: Prisma.ActionSnapshotUpdateManyWithoutActionNestedInput
+  groupMemberships?: Prisma.ActionGroupActionUpdateManyWithoutActionNestedInput
+}
+
+export type ActionUncheckedUpdateWithoutProjectInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  target?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  undoStrategy?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  beforeSnapshotId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  afterHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  snapshots?: Prisma.ActionSnapshotUncheckedUpdateManyWithoutActionNestedInput
+  groupMemberships?: Prisma.ActionGroupActionUncheckedUpdateManyWithoutActionNestedInput
+}
+
+export type ActionUncheckedUpdateManyWithoutProjectInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  target?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  undoStrategy?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  beforeSnapshotId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  afterHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  result?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  undoResult?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 
@@ -779,6 +971,7 @@ export type ActionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   metadata?: boolean
   result?: boolean
   undoResult?: boolean
+  project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
   snapshots?: boolean | Prisma.Action$snapshotsArgs<ExtArgs>
   groupMemberships?: boolean | Prisma.Action$groupMembershipsArgs<ExtArgs>
   _count?: boolean | Prisma.ActionCountOutputTypeDefaultArgs<ExtArgs>
@@ -799,6 +992,7 @@ export type ActionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   metadata?: boolean
   result?: boolean
   undoResult?: boolean
+  project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["action"]>
 
 export type ActionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -816,6 +1010,7 @@ export type ActionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   metadata?: boolean
   result?: boolean
   undoResult?: boolean
+  project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["action"]>
 
 export type ActionSelectScalar = {
@@ -837,16 +1032,22 @@ export type ActionSelectScalar = {
 
 export type ActionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "projectId" | "type" | "target" | "status" | "undoStrategy" | "createdAt" | "startedAt" | "completedAt" | "beforeSnapshotId" | "afterHash" | "metadata" | "result" | "undoResult", ExtArgs["result"]["action"]>
 export type ActionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
   snapshots?: boolean | Prisma.Action$snapshotsArgs<ExtArgs>
   groupMemberships?: boolean | Prisma.Action$groupMembershipsArgs<ExtArgs>
   _count?: boolean | Prisma.ActionCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type ActionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type ActionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type ActionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
+}
+export type ActionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
+}
 
 export type $ActionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Action"
   objects: {
+    project: Prisma.$ProjectPayload<ExtArgs>
     snapshots: Prisma.$ActionSnapshotPayload<ExtArgs>[]
     groupMemberships: Prisma.$ActionGroupActionPayload<ExtArgs>[]
   }
@@ -1259,6 +1460,7 @@ readonly fields: ActionFieldRefs;
  */
 export interface Prisma__ActionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  project<T extends Prisma.ProjectDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProjectDefaultArgs<ExtArgs>>): Prisma.Prisma__ProjectClient<runtime.Types.Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   snapshots<T extends Prisma.Action$snapshotsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Action$snapshotsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ActionSnapshotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   groupMemberships<T extends Prisma.Action$groupMembershipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Action$groupMembershipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ActionGroupActionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1558,6 +1760,10 @@ export type ActionCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensio
    */
   data: Prisma.ActionCreateManyInput | Prisma.ActionCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ActionIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1628,6 +1834,10 @@ export type ActionUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensio
    * Limit how many Actions to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ActionIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
