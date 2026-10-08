@@ -1,5 +1,9 @@
 import { Hono } from "hono";
 
+import type {
+  PostgresProjectStore,
+} from "@mercy/postgres";
+
 import type { MercyRuntime } from "@mercy/runtime";
 
 import {
@@ -10,8 +14,13 @@ import {
   createGroupRoutes,
 } from "./routes/groups";
 
+import {
+  createProjectRoutes,
+} from "./routes/projects";
+
 export interface MercyApiDependencies {
   readonly runtime: MercyRuntime;
+  readonly projects: PostgresProjectStore;
 }
 
 export function createApp(
@@ -25,6 +34,13 @@ export function createApp(
       service: "mercy-api",
     });
   });
+
+  app.route(
+    "/",
+    createProjectRoutes(
+      dependencies.projects,
+    ),
+  );
 
   app.route(
     "/",

@@ -14,6 +14,7 @@ const services =
 const app =
   createApp({
     runtime: services.runtime,
+    projects: services.projects,
   });
 
 const port = Number(
