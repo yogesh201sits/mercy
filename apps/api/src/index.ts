@@ -15,6 +15,7 @@ const app =
   createApp({
     runtime: services.runtime,
     projects: services.projects,
+    apiKeys: services.apiKeys,
   });
 
 const port = Number(

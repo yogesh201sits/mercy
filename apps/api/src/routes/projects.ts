@@ -4,20 +4,20 @@ import type {
   PostgresProjectStore,
 } from "@mercy/postgres";
 
-import {
-  requireClerkAuth,
-  authUserKey,
-  type AuthUser,
-} from "../auth/middleware";
+import type {
+  MercyEnv,
+} from "../auth/context";
 
-type Variables = {
-  authUser: AuthUser;
-};
+import {
+  authUserKey,
+  requireClerkAuth,
+} from "../auth/middleware";
+import { MercyError } from "@mercy/shared";
 
 export function createProjectRoutes(
   projects: PostgresProjectStore,
 ) {
-  const app = new Hono<{ Variables: Variables }>();
+  const app = new Hono<MercyEnv>();
 
   /*
    * Create project
@@ -65,7 +65,8 @@ export function createProjectRoutes(
         return c.json(
           {
             error: "Bad Request",
-            message: "Project name must be 100 characters or fewer",
+            message:
+              "Project name must be 100 characters or fewer",
           },
           400,
         );
@@ -92,7 +93,9 @@ export function createProjectRoutes(
       const user = c.get(authUserKey);
 
       const userProjects =
-        await projects.listByClerkUser(user.userId);
+        await projects.listByClerkUser(
+          user.userId,
+        );
 
       return c.json(userProjects);
     },
@@ -108,8 +111,15 @@ export function createProjectRoutes(
     requireClerkAuth,
     async (c) => {
       const user = c.get(authUserKey);
-      const projectId = c.req.param("projectId");
-      const project = await projects.get(projectId!);
+      const projectId =
+        c.req.param("projectId");
+      
+        if(!projectId){
+          throw new Error();
+        }
+
+      const project =
+        await projects.get(projectId);
 
       if (!project) {
         return c.json(
@@ -121,11 +131,15 @@ export function createProjectRoutes(
         );
       }
 
-      if (project.clerkUserId !== user.userId) {
+      if (
+        project.clerkUserId !==
+        user.userId
+      ) {
         return c.json(
           {
             error: "Forbidden",
-            message: "You do not have access to this project",
+            message:
+              "You do not have access to this project",
           },
           403,
         );

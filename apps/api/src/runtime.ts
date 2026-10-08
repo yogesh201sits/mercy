@@ -12,6 +12,7 @@ import { Pool } from "pg";
 import {
   PostgresActionGroupJournal,
   PostgresActionJournal,
+  PostgresApiKeyStore,
   PostgresProjectStore,
   PostgresSnapshotStore,
   createPrismaClient,
@@ -39,6 +40,7 @@ export interface MercyApiRuntime {
   readonly clientPool: Pool;
   readonly snapshotStorage: LocalSnapshotStorage;
   readonly projects: PostgresProjectStore;
+  readonly apiKeys: PostgresApiKeyStore;
 }
 
 export function createMercyRuntime(): MercyApiRuntime {
@@ -81,6 +83,9 @@ export function createMercyRuntime(): MercyApiRuntime {
   const projects =
     new PostgresProjectStore(prisma);
 
+  const apiKeys =
+    new PostgresApiKeyStore(prisma);
+
   const filesystemAdapter =
     new FilesystemAdapter(workspaceRoot);
 
@@ -106,5 +111,6 @@ export function createMercyRuntime(): MercyApiRuntime {
     clientPool,
     snapshotStorage,
     projects,
+    apiKeys,
   };
 }

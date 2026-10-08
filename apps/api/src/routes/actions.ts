@@ -1,7 +1,23 @@
 import { Hono } from "hono";
 import { z } from "zod";
 
-import type { MercyRuntime } from "@mercy/runtime";
+import type {
+  PostgresApiKeyStore,
+} from "@mercy/postgres";
+
+import type {
+  MercyRuntime,
+} from "@mercy/runtime";
+
+import type {
+  MercyEnv,
+} from "../auth/context";
+
+import {
+  apiKeyAuthKey,
+  requireApiKey,
+  requireProjectAccess,
+} from "../auth";
 
 const actionTypeSchema = z.enum([
   "create",
@@ -23,20 +39,50 @@ const createActionSchema = z.object({
 
 export function createActionRoutes(
   runtime: MercyRuntime,
+  apiKeys: PostgresApiKeyStore,
 ) {
-  const app = new Hono();
+  const app = new Hono<MercyEnv>();
 
+  /*
+   * Create action
+   *
+   * POST /projects/:projectId/actions
+   *
+   * API-key authenticated.
+   */
   app.post(
     "/projects/:projectId/actions",
+    requireApiKey(apiKeys),
+    requireProjectAccess,
     async (c) => {
       const projectId =
         c.req.param("projectId");
 
-      const body =
-        await c.req.json();
+      let body: unknown;
+
+      try {
+        body = await c.req.json();
+      } catch {
+        return c.json(
+          {
+            error: "Bad Request",
+            message: "Invalid JSON body",
+          },
+          400,
+        );
+      }
 
       const parsed =
         createActionSchema.safeParse(body);
+
+      if (!projectId) {
+        return c.json(
+          {
+            error: "Project id required",
+          },
+          400,
+        );
+      }
 
       if (!parsed.success) {
         return c.json(
@@ -80,11 +126,28 @@ export function createActionRoutes(
     },
   );
 
+  /*
+   * List project actions
+   *
+   * GET /projects/:projectId/actions
+   *
+   * API-key authenticated.
+   */
   app.get(
     "/projects/:projectId/actions",
+    requireApiKey(apiKeys),
+    requireProjectAccess,
     async (c) => {
       const projectId =
         c.req.param("projectId");
+      if (!projectId) {
+        return c.json(
+          {
+            error: "Projct id required",
+          },
+          400,
+        );
+      }
 
       try {
         const actions =
@@ -107,11 +170,27 @@ export function createActionRoutes(
     },
   );
 
+  /*
+   * Get action
+   *
+   * GET /actions/:actionId
+   *
+   * API-key authenticated.
+   */
   app.get(
     "/actions/:actionId",
+    requireApiKey(apiKeys),
     async (c) => {
       const actionId =
         c.req.param("actionId");
+      if (!actionId) {
+        return c.json(
+          {
+            error: "Action id required",
+          },
+          400,
+        );
+      }
 
       try {
         const action =
@@ -125,6 +204,23 @@ export function createActionRoutes(
               error: "Action not found",
             },
             404,
+          );
+        }
+
+        const auth =
+          c.get(apiKeyAuthKey);
+
+        if (
+          action.projectId !==
+          auth.projectId
+        ) {
+          return c.json(
+            {
+              error: "Forbidden",
+              message:
+                "API key does not have access to this action",
+            },
+            403,
           );
         }
 
@@ -143,20 +239,69 @@ export function createActionRoutes(
     },
   );
 
+  /*
+   * Undo action
+   *
+   * POST /actions/:actionId/undo
+   *
+   * API-key authenticated.
+   */
   app.post(
     "/actions/:actionId/undo",
+    requireApiKey(apiKeys),
     async (c) => {
       const actionId =
         c.req.param("actionId");
+      if (!actionId) {
+        return c.json(
+          {
+            error: "Action id required",
+          },
+          400,
+        );
+      }
 
       try {
+        const action =
+          await runtime.getAction(
+            actionId,
+          );
+
+        if (!action) {
+          return c.json(
+            {
+              error: "Action not found",
+            },
+            404,
+          );
+        }
+
+        const auth =
+          c.get(apiKeyAuthKey);
+
+        if (
+          action.projectId !==
+          auth.projectId
+        ) {
+          return c.json(
+            {
+              error: "Forbidden",
+              message:
+                "API key does not have access to this action",
+            },
+            403,
+          );
+        }
+
         const result =
           await runtime.undo(actionId);
 
         if (!result.success) {
           return c.json(
             result,
-            result.conflict ? 409 : 422,
+            result.conflict
+              ? 409
+              : 422,
           );
         }
 
