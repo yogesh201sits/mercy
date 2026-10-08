@@ -1,13 +1,20 @@
 {
   "compilerOptions": {
     "target": "ES2024",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
-    "types": ["bun","node"],
+    "types": ["bun", "node"],
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./apps/dashboard/src/*"],
+      "@mercy/*": ["./packages/*/src/index.ts"]
+    }
   }
 }
