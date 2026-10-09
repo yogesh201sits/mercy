@@ -1,0 +1,52 @@
+---
+title: Errors and recovery
+description: Interpret execution and undo failures and investigate partial outcomes.
+---
+
+# Errors and recovery
+
+Mercy reports failure in two ways: methods can throw, or adapter methods can return result objects with `success: false`. Handle both; a fulfilled promise does not necessarily mean an action succeeded.
+
+## Execution failures
+
+`MercyRuntime.execute` throws `MercyError` when no adapter handles the input (`ADAPTER_NOT_FOUND`), group validation fails, or dependencies throw. The runtime records a failed action when an action record already exists and it can update the journal. An adapter can instead return `ActionResult { success: false, error }`; in this case the runtime marks the journal failed and returns that result without throwing.
+
+Validation failures depend on the adapter: the filesystem adapter requires `content` for create/update and `destination` for move/rename; the PostgreSQL adapter requires primary-key metadata and operation-specific data. A failed action may already have a snapshot because capture precedes execution.
+
+## Undo failures
+
+`undo` can throw for an unknown action, missing snapshot link, missing adapter, or storage/journal error. Otherwise it may return `UndoResult { success: false, conflict, error }`. A detected conflict is recorded as `undo_failed` and does not proceed to restoration. A thrown error is also recorded as an unsuccessful undo result before it is rethrown.
+
+For groups, undo proceeds in reverse order and stops at its first unsuccessful action. Earlier actions in that pass may already be undone. Inspect the group result and individual action records rather than assuming all-or-nothing behavior.
+
+## Recommended handling
+
+```ts
+const result = await mercy.execute(input);
+if (!result.success) {
+  console.error("Action was recorded as failed", result.actionId, result.error);
+  return;
+}
+
+try {
+  const undo = await mercy.undo(result.actionId);
+  if (!undo.success) {
+    console.error("Undo did not complete", undo.conflict, undo.error);
+  }
+} catch (error) {
+  // The runtime records undo failure where possible, then propagates errors.
+  console.error("Undo raised an error", error);
+}
+```
+
+For HTTP calls, the SDK rejects non-success HTTP responses with `MercyHttpError`, which exposes `status` and `body`. This is separate from an HTTP-successful action response whose `ActionResult.success` is false.
+
+## Debugging checklist
+
+1. Record the returned `actionId` or group ID.
+2. Read the action/group journal record and inspect its status, result, undo result, snapshot ID, and timestamps.
+3. Confirm the selected adapter can handle the target and its operation metadata is valid.
+4. Confirm the snapshot metadata row and byte storage both still exist.
+5. If undo reports a conflict, inspect the live resource before retrying; do not bypass the adapter's check by restoring manually without understanding what changed.
+
+See [actions](/docs/concepts/actions), [undo and recovery](/docs/concepts/undo-and-recovery), and [snapshots](/docs/concepts/snapshots).

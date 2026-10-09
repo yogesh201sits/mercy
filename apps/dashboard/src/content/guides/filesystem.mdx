@@ -1,0 +1,57 @@
+---
+title: Filesystem adapter
+description: Configure supported file actions, snapshots, path checks, and undo.
+---
+
+# Filesystem adapter
+
+`FilesystemAdapter` operates on files beneath one configured root. Use it to make supported file changes recoverable through `MercyRuntime`; do not expose it to untrusted paths without considering the limitations below.
+
+## Supported actions
+
+| Action | Required metadata | Behavior |
+| --- | --- | --- |
+| `create` | `content: string` | Creates parent directories and writes UTF-8 content. `writeFile` replaces an existing file too; the snapshot captures the old file if present. |
+| `update` | `content: string` | Writes UTF-8 content, creating parent directories if needed. |
+| `delete` | None | Removes the target file. A missing target fails. |
+| `rename`, `move` | `destination: string` | Renames the source to the destination, creating destination parent directories. Both use Node's file rename operation. |
+
+Targets must be relative file paths. The adapter rejects absolute paths, the root itself, and paths that lexically escape the configured root. It operates on files rather than directory trees. It declines inputs with string-valued `metadata.primaryKey`, allowing database-shaped actions to be handled by another adapter.
+
+## Runtime example
+
+The filesystem adapter alone is not a complete runtime: execution also needs journal and snapshot-store implementations. See the [runtime integration guide](/docs/guides/runtime-integration) for a complete composition. Once a `MercyClient` has been connected to that API, a file create looks like:
+
+```ts
+const result = await mercy.execute({
+  projectId,
+  type: "create",
+  target: "notes/today.txt",
+  metadata: { content: "Keep this change reversible." },
+});
+
+if (!result.success) {
+  throw new Error(result.error ?? "File action failed");
+}
+
+const undo = await mercy.undo(result.actionId);
+if (!undo.success) {
+  throw new Error(undo.error ?? "Undo failed");
+}
+```
+
+The API composition currently sets the root from `MERCY_TEST_FILESYSTEM_ROOT`, defaulting to `.test-agent-simulation` under the API process working directory.
+
+## Captured state and undo
+
+Before execution, the adapter captures existing file bytes, existence, relative path, size, and file mode. If the target is missing, the snapshot records `exists: false`. Undo restores prior bytes and mode, or removes a file that did not exist before a create.
+
+For `create`, `update`, `rename`, and `move`, the adapter returns an after-hash and checks the current content before undo. If the resource is missing or its bytes changed, undo reports a conflict. Rename/move checks the destination and also refuses to reverse the operation if the original path has since been recreated.
+
+Delete has no after-hash in its result. Consequently, its verifier cannot detect a file recreated after deletion, and restoring the snapshot can overwrite that path. Verification and restoration are also separate operations, so concurrent changes can race the check.
+
+## Important path and filesystem limits
+
+The root check is lexical (`resolve`/`relative`) and does not resolve symlinks. A symlink inside the root may point outside it. Restrict write access to the root and do not treat the lexical check as a symlink-safe sandbox. Atomicity, ownership, timestamps, ACLs, and directory metadata are not preserved; the implementation restores file contents and mode only.
+
+Related: [snapshots](/docs/concepts/snapshots), [undo and recovery](/docs/concepts/undo-and-recovery), and [error handling](/docs/guides/error-handling).

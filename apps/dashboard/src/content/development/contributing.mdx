@@ -1,0 +1,30 @@
+---
+title: Contributing
+description: A practical, repository-aligned contribution workflow.
+---
+
+# Contributing
+
+Contribute changes in the affected workspace package, preserve the existing contract boundaries, and include tests for behavior changes. The repository does not currently contain a dedicated `CONTRIBUTING.md`, so the steps here describe the commands and patterns visible in the current codebase rather than additional enforced project policy.
+
+## Suggested workflow
+
+1. Install with `bun install` and identify the package/application owning the behavior.
+2. Keep public types and implementation changes together; use the existing `@mercy/core` contracts rather than adding runtime-specific branches for one adapter.
+3. Add tests alongside the package or in root `tests`, following Bun's `bun:test` patterns.
+4. Run targeted tests, then the relevant broader checks:
+
+   ```sh
+   bun test tests/filesystem-adapter.test.ts
+   bun run typecheck
+   bun run lint
+   ```
+
+5. For dashboard or docs changes, also run `bun run --filter @mercy/dashboard build` and check that every Nextra link resolves.
+6. For PostgreSQL-backed changes, use disposable databases and run the relevant integration tests with `DATABASE_URL` and `CLIENT_DATABASE_URL` configured.
+
+## Pull request expectations
+
+Describe the user-visible or contract-level change, state which commands ran, report any database-dependent checks that could not be run, and call out changed snapshot formats or persistence behavior. Do not claim a check passed when it was skipped.
+
+Keep credentials out of source control. See [testing](/docs/development/testing) and [adapter architecture](/docs/concepts/adapters).

@@ -1,0 +1,25 @@
+---
+title: Adapter architecture
+description: The responsibilities and extension points of Mercy adapters.
+---
+
+# Adapter architecture
+
+An adapter is the boundary between Mercy's common action lifecycle and a system-specific operation. Implement one when an action type or target system needs its own validation, prior-state capture, execution, conflict check, and restoration logic.
+
+## Contract
+
+`ActionAdapter` exposes a stable `name` and six operations: `canHandle`, `prepare`, `snapshot`, `execute`, `undo`, and `verify`. The runtime uses `canHandle` to choose the first matching adapter; order therefore matters if adapters overlap.
+
+`prepare` validates the input and returns a `PreparedAction`, including the runtime action ID and an undo strategy. `snapshot` returns bytes and optional metadata. `execute` returns an `ActionResult`. On undo, the runtime provides the recorded `Action`, snapshot metadata, and snapshot bytes; the adapter returns an `UndoResult`. `verify` reports validity, conflict, and an optional reason.
+
+## Implementation requirements
+
+- Make `canHandle` narrow and deterministic.
+- Validate required operation metadata in `prepare`; do not rely on unchecked values later.
+- Capture exactly the state needed to restore the operation, including enough metadata to distinguish a previously missing resource.
+- Prefer parameterized operations for user-supplied values and validate identifiers where a target system requires identifiers in query text.
+- Make verification reflect the state the action actually left behind. Report conflicts rather than silently overwriting external changes.
+- Test capture, success, returned failure, thrown failure, conflict, missing target, and restoration.
+
+The core runtime does not enforce a specific schema for adapter metadata or automatically guarantee atomicity, idempotency, or snapshot compatibility. See the [adapter API](/docs/reference/adapter-api), [custom adapter guide](/docs/guides/custom-adapter), and implementations in `packages/filesystem` and `packages/postgres-adapter`.

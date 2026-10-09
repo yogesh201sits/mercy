@@ -1,0 +1,38 @@
+---
+title: Actions
+description: How Mercy prepares, records, executes, and fails actions.
+---
+
+# Actions
+
+An action is a requested change to a target system. Use the action contract when calling the SDK or implementing an adapter; it gives the runtime a common record of the operation and its recovery state.
+
+## Action input
+
+`ActionInput` requires a `projectId`, an `ActionType`, and a non-empty `target`. Optional `metadata` carries operation-specific values. The current action types are `create`, `update`, `delete`, `rename`, `move`, and `custom`. See the [core API reference](/docs/reference/core-api).
+
+## Lifecycle
+
+For `MercyRuntime.execute`, the runtime:
+
+1. Finds the first registered adapter whose `canHandle(input)` returns true. If none matches, it throws `ADAPTER_NOT_FOUND` before creating an action record.
+2. Creates a journal entry in `pending` state. When grouped, it also associates the action with the group.
+3. Calls adapter `prepare`, then `snapshot`; persists the captured bytes and metadata; links the snapshot to the action; and marks the action `running`.
+4. Calls adapter `execute`. A returned `success: false` marks the action `failed` and is returned to the caller. A successful result marks it `completed`, including `afterHash` when supplied.
+5. If preparation, snapshotting, snapshot linking, the running transition, execution, or completion update throws, Mercy attempts to mark the action (and any group) failed, then rethrows the error.
+
+Action creation, group validation, and group membership are handled before that `try` block, so a failure there can leave earlier records unchanged. Overall, this is orchestration, not a transaction across the journal, snapshot storage, and target system; a failure between steps can leave the operation only partially completed.
+
+## Results and statuses
+
+`ActionResult` contains `actionId`, `success`, and optional `result`, `error`, and `afterHash`. The journal statuses are `pending`, `running`, `completed`, `failed`, `undoing`, `undone`, and `undo_failed`.
+
+The runtime relies on each adapter to report operational failures consistently. Some adapters return unsuccessful results; others can throw. Do not interpret a returned failure as an exception, or a completed journal status as proof of a cross-system atomic commit.
+
+## Related pages
+
+- [Journal and history](/docs/concepts/journal)
+- [Snapshots](/docs/concepts/snapshots)
+- [Undo and recovery](/docs/concepts/undo-and-recovery)
+- [Filesystem integration](/docs/guides/filesystem)
+- [PostgreSQL integration](/docs/guides/postgresql)

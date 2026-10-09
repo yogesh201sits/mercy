@@ -27,5 +27,8 @@
     "@langchain/langgraph": "^1.4.19",
     "dotenv": "^18.0.5",
     "zod": "^4.6.5"
+  },
+  "patchedDependencies": {
+    "nextra-theme-docs@4.6.1": "patches/nextra-theme-docs@4.6.1.patch"
   }
 }

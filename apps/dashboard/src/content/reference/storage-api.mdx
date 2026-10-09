@@ -1,0 +1,31 @@
+---
+title: Journal and snapshot storage
+description: Storage interfaces and the implementations currently available.
+---
+
+# Journal and snapshot storage
+
+Runtime storage interfaces are under `@mercy/core`; concrete journals and snapshot stores are supplied by `@mercy/journal`, `@mercy/snapshots`, and `@mercy/postgres`. A runtime host passes implementations into `MercyRuntime`.
+
+## ActionJournal
+
+`ActionJournal` supports:
+
+- `create(CreateJournalEntry)` and lifecycle updates: `markSnapshotCreated`, `markRunning`, `markCompleted`, `markFailed`, `markUndoing`, `markUndone`, and `markUndoFailed`.
+- `get(actionId)` and `list(projectId)`.
+
+It returns `JournalEntry`, which extends `Action` with optional `result` and `undoResult`. `InMemoryActionJournal` is process-local; `PostgresActionJournal` persists rows using the Prisma metadata database.
+
+## SnapshotStore and SnapshotStorage
+
+Core's `SnapshotStore` manages metadata and bytes together: `create`, `get`, `read`, and `delete` operate by snapshot ID. `CreateSnapshotInput` contains the action ID, bytes, and optional metadata.
+
+The lower-level `SnapshotStorage` contract stores bytes by key using `put`, `get`, `delete`, and `exists`. `LocalSnapshotStorage` implements this contract under a configured directory and guards relative keys from lexical traversal outside that directory.
+
+`PostgresSnapshotStore` composes a Prisma metadata repository with a `SnapshotStorage`; PostgreSQL holds the snapshot record while the configured storage holds its bytes. `LocalSnapshotStore` is incomplete: `create` works, but `get` returns `null`, while `read` and `delete` throw.
+
+## Group storage
+
+`ActionGroupJournal` provides create, add-action, lifecycle updates, get, and list operations. The journal package provides `InMemoryActionGroupJournal`; `@mercy/postgres` provides `PostgresActionGroupJournal`.
+
+See [journal and history](/docs/concepts/journal), [snapshots](/docs/concepts/snapshots), and [runtime integration](/docs/guides/runtime-integration).

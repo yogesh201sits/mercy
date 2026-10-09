@@ -1,0 +1,41 @@
+---
+title: Testing
+description: Run unit, runtime, and PostgreSQL-backed tests in the workspace.
+---
+
+# Testing
+
+Mercy uses Bun's test runner. Tests cover journal and snapshot storage, filesystem behavior, runtime groups, SDK client/transports, and PostgreSQL integrations. Run targeted tests while iterating, then run the broader suite before a change is merged.
+
+## Commands
+
+From the repository root:
+
+```sh
+bun test
+bun test tests/filesystem-adapter.test.ts
+bun run --filter @mercy/sdk test
+bun run typecheck
+bun run lint
+```
+
+The dashboard build and its TypeScript project can be checked with:
+
+```sh
+bun run --filter @mercy/dashboard build
+bunx tsc --noEmit -p apps/dashboard/tsconfig.json
+```
+
+The API package does not define a test script. Root `bun test` discovers tests under the repository, including tests that need an external database.
+
+## PostgreSQL integration requirements
+
+The PostgreSQL adapter integration tests need a reachable PostgreSQL database. They read `CLIENT_DATABASE_URL`, falling back to `DATABASE_URL` for the adapter target. Tests using `createPrismaClient()` also require `DATABASE_URL` for Mercy's own metadata database. Keep the test target disposable: tests create/drop tables and write journal and snapshot records.
+
+Some adapter tests skip or throw at module setup without those URLs; the default root test run should therefore be treated as environment-dependent rather than guaranteed to pass on a clean machine. No Docker Compose or Testcontainers setup is defined in this repository.
+
+## What to test for adapter changes
+
+Follow the existing tests with focused cases for supported input validation, snapshotting old and missing state, successful execution, unsuccessful result and thrown error paths, undo restoration, conflicts from external changes, and persistence where relevant. Runtime integration tests should verify both the target state and the corresponding journal state.
+
+Related: [filesystem guide](/docs/guides/filesystem), [PostgreSQL guide](/docs/guides/postgresql), and [local setup](/docs/development/local-setup).

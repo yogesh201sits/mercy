@@ -1,0 +1,42 @@
+---
+title: Environment variables
+description: Environment variables read by the API, dashboard, SDK examples, and tests.
+---
+
+# Environment variables
+
+Mercy does not have a single shared configuration loader. These variables are read directly by the API, dashboard, PostgreSQL client, tests, or examples; configure only those used by the process you run.
+
+## API and database
+
+| Variable | Required | Default / purpose |
+| --- | --- | --- |
+| `PORT` | No | API listens on `3000` if unset. |
+| `DATABASE_URL` | Yes for API runtime | Connection string for Prisma and Mercy-owned metadata. `createPrismaClient()` throws if absent. Prisma migration configuration also reads this variable. |
+| `CLIENT_DATABASE_URL` | Yes for API runtime | `pg` connection string used by the PostgreSQL adapter for the application tables being acted on. |
+| `MERCY_TEST_FILESYSTEM_ROOT` | No | API filesystem adapter root; defaults to `.test-agent-simulation` beneath the API process working directory. |
+| `CLERK_SECRET_KEY` | Yes for API startup | Clerk server secret. |
+| `CLERK_PUBLISHABLE_KEY` | Yes for API startup | Clerk publishable key, read by the API authentication middleware. |
+| `CLERK_AUTHORIZED_PARTIES` | No | Comma-separated authorized origins; defaults to `http://localhost:3000,http://localhost:3001`. |
+
+The API currently stores snapshot bytes under `.real-db-snapshots` in its process working directory; this path is hard-coded, not configurable through an environment variable.
+
+## Dashboard
+
+| Variable | Required | Default / purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_MERCY_API_URL` | No | Dashboard API base URL; defaults to `http://localhost:3000`. It is public client configuration, not a secret. |
+
+## SDK integration tests and examples
+
+| Variable | Required | Default / purpose |
+| --- | --- | --- |
+| `MERCY_API_URL` | No | SDK smoke/integration scripts default to `http://localhost:3000`. |
+| `MERCY_API_KEY` | Yes for authenticated SDK tests/examples | API key used by `HttpTransport`; keep it server-side. |
+| `MERCY_TEST_PROJECT_ID` | Yes for SDK tests/examples | Existing project ID for test actions. |
+| `MERCY_TEST_FILESYSTEM_ROOT` | No | Root used by agent examples; defaults to `.test-agent-simulation`. |
+| `CLIENT_DATABASE_URL` or `DATABASE_URL` | Required by PostgreSQL adapter integration tests | Target database connection used by the tests. The separate Prisma test client also needs `DATABASE_URL`. |
+| `GROQ_API_KEY` | Yes for LangGraph agent examples | Credential for the Groq-backed agent example. |
+| `MERCY_CLEANUP` | No | Set to the literal `true` to enable cleanup in `examples/langgraph-agent/agent2.ts`; the example otherwise retains files for debugging. |
+
+Test and example defaults do not replace the API runtime's required database and Clerk settings. See [runtime integration](/docs/guides/runtime-integration) and [local setup](/docs/development/local-setup).

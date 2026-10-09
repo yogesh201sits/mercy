@@ -1,0 +1,26 @@
+---
+
+title: Mercy Documentation
+description: Developer documentation for Mercy.
+---
+
+# Mercy
+
+**Make AI-agent actions reversible.**
+
+Mercy captures state before supported actions, records execution history, and provides mechanisms to undo changes when recovery is possible.
+
+## Start here
+
+* [Architecture](/docs/architecture) — understand the runtime and package boundaries.
+* [Adapters](/docs/adapters) — learn how to integrate new systems and tools.
+* [SDK](/docs/sdk) — learn how applications interact with Mercy.
+
+## Design principles
+
+* **Extensible:** integrations should implement defined contracts rather than modify the core.
+* **Recoverable:** capture enough prior state to support restoration.
+* **Conflict-aware:** avoid overwriting changes made after a Mercy-managed action.
+* **Testable:** verify extension behavior through repeatable contract and integration tests.
+
+> Recovery depends on the adapter, captured state, and the operation being performed. Not every action can be safely reversed.

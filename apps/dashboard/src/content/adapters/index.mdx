@@ -1,0 +1,19 @@
+---
+
+title: Adapters
+description: Integrate new systems with Mercy.
+---
+
+# Adapters
+
+Adapters connect Mercy to systems where actions take place.
+
+## Before implementing an adapter
+
+1. Identify the operations the external system supports.
+2. Define how the previous state can be captured.
+3. Define how the action will be executed and verified.
+4. Define how restoration works and when conflicts must be reported.
+5. Test success, failure, missing resources, and external modifications.
+
+The exact adapter interface must match the current contracts in `@mercy/core`. Consult the implementation of `@mercy/filesystem` as the reference before creating another adapter.

@@ -1,0 +1,52 @@
+---
+title: Core API
+description: Action, snapshot, group, result, and store contracts exported by core.
+---
+
+# Core API
+
+`@mercy/core` defines the shared TypeScript contracts consumed by runtime and adapters. It is a private workspace package rather than a separately published SDK.
+
+## Action types
+
+`ActionType` is `create | update | delete | rename | move | custom`.
+`ActionStatus` is `pending | running | completed | failed | undoing | undone | undo_failed`.
+`UndoStrategyType` is `restore | reverse | compensate`.
+
+```ts
+import type { ActionInput, ActionResult, UndoResult } from "@mercy/core";
+
+const input: ActionInput = {
+  projectId: "project-id",
+  type: "create",
+  target: "notes.txt",
+  metadata: { content: "hello" },
+};
+
+const result: ActionResult = {
+  actionId: "action-id",
+  success: true,
+};
+
+const undo: UndoResult = {
+  actionId: result.actionId,
+  success: true,
+  conflict: false,
+};
+```
+
+`Action` carries the ID, project, type, target, status, creation time, optional start/completion time, optional `beforeSnapshotId` and `afterHash`, the undo strategy, and optional metadata. These are runtime contracts; the API may serialize timestamps to strings over HTTP.
+
+## Adapter and snapshot contracts
+
+`PreparedAction` contains `actionId`, `input`, `undoStrategy`, and optional metadata. `CapturedState` contains `data: Uint8Array` and optional metadata. `Snapshot` describes the stored snapshot metadata: ID, action ID, key, checksum, size, creation time, and optional metadata.
+
+`ActionAdapter`, `VerificationResult`, `SnapshotStore`, and `CreateSnapshotInput` are exported from the core package too. Their exact method signatures are in [Adapter API](/docs/reference/adapter-api) and [Journal and snapshot storage](/docs/reference/storage-api).
+
+## Groups
+
+`ActionGroup` carries an ID, project ID, lifecycle status, ordered action IDs, creation time, optional completion time, and optional error. `GroupUndoResult` contains overall success/conflict, per-action undo results, and an optional error. Group status is defined separately from `ActionStatus`.
+
+## Errors
+
+`MercyError` is exported from `@mercy/shared`, not from `@mercy/core`. Its `code` is one of `INVALID_INPUT`, `ACTION_NOT_FOUND`, `SNAPSHOT_NOT_FOUND`, `ADAPTER_NOT_FOUND`, `ACTION_CONFLICT`, `UNDO_FAILED`, `ACTION_FAILED`, `SNAPSHOT_FAILED`, or `INTERNAL_ERROR`. Consult [error handling](/docs/guides/error-handling) for when operations throw versus return a failure result.

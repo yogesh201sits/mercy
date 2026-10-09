@@ -1,0 +1,75 @@
+/* Mercy Docs — Sidebar */
+
+:root {
+  --mercy-accent: #39ff14;
+  --mercy-text: #171717;
+  --mercy-muted: #737373;
+  --mercy-border: #e5e5e5;
+  --mercy-sidebar-bg: #ffffff;
+}
+
+/* Sidebar surface */
+.nextra-sidebar-container {
+  background: var(--mercy-sidebar-bg) !important;
+  border-right: 1px solid var(--mercy-border) !important;
+}
+
+/* Sidebar typography */
+.nextra-sidebar-container a {
+  color: #525252;
+  font-size: 13px;
+  font-weight: 450;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
+}
+
+/* Hover state */
+.nextra-sidebar-container a:hover {
+  color: var(--mercy-text);
+  background: #f5f5f5;
+}
+
+/* Active page */
+.nextra-sidebar-container a[aria-current="page"] {
+  color: var(--mercy-text) !important;
+  background: #f5f5f5 !important;
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--mercy-accent);
+}
+
+/* Sidebar section headings */
+.nextra-sidebar-container summary,
+.nextra-sidebar-container .nextra-menu-title {
+  color: #737373;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Nested navigation */
+.nextra-sidebar-container ul {
+  margin-top: 4px;
+}
+
+/* Disclosure controls */
+.nextra-sidebar-container button {
+  color: #737373;
+}
+
+/* Scrollbar */
+.nextra-sidebar-container {
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d4 transparent;
+}
+
+/* Remove decorative shadows */
+.nextra-sidebar-container,
+.nextra-sidebar-container * {
+  box-shadow: none;
+}
+
+.nextra-sidebar-container a[aria-current="page"] {
+  box-shadow: inset 2px 0 0 var(--mercy-accent);
+}

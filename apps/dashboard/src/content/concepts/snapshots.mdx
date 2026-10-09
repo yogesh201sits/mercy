@@ -1,0 +1,31 @@
+---
+title: Snapshots
+description: What adapters capture and how Mercy persists recovery state.
+---
+
+# Snapshots
+
+A snapshot is the adapter-produced prior state Mercy needs to attempt restoration. Snapshot bytes are opaque to the runtime; the adapter defines their representation and interprets them during undo.
+
+## Capture and persistence
+
+Before executing an action, the runtime calls `adapter.snapshot(preparedAction)`. The adapter returns `CapturedState` (`Uint8Array` plus optional metadata). The runtime passes those bytes to `SnapshotStore.create`, then records the returned snapshot ID on the journal entry before calling `execute`.
+
+The snapshot record carries an ID, action ID, relative storage key, SHA-256 checksum, byte size, creation time, and optional metadata. The PostgreSQL-backed store writes the bytes through a `SnapshotStorage`, then persists the metadata row. If metadata persistence fails, it attempts to delete the bytes and throws `SNAPSHOT_FAILED`.
+
+The checksum and size are recorded at creation. The current `read` path retrieves bytes by storage key but does not verify the checksum before returning them.
+
+## Adapter representations
+
+- The filesystem adapter captures the original file bytes. Metadata records whether the file existed, its relative path, and—when it existed—its byte size and mode. A missing file is represented by empty bytes plus `exists: false`.
+- The PostgreSQL adapter serializes a typed JSON snapshot describing a prior row or a set of affected rows.
+
+The runtime does not understand either format. Keep snapshot encoding and restoration logic paired within an adapter version; a future format change needs an explicit compatibility strategy for old stored snapshots.
+
+## Storage implementations and limitation
+
+`LocalSnapshotStorage` stores bytes under a configured local directory and rejects absolute keys and keys that lexically escape that directory. The API uses local snapshot bytes and PostgreSQL metadata in separate stores.
+
+`LocalSnapshotStore` can create snapshot bytes, but its `get` currently always returns `null`, and `read` and `delete` throw because metadata lookup is not implemented. It therefore cannot currently support a complete undo flow by itself. For a working durable flow, use the PostgreSQL snapshot store with a persistent metadata database and a `SnapshotStorage`.
+
+See the [storage API](/docs/reference/storage-api) and [PostgreSQL guide](/docs/guides/postgresql).

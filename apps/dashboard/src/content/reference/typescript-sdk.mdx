@@ -1,0 +1,73 @@
+---
+title: TypeScript SDK
+description: Public exports, transports, methods, and typed action calls.
+---
+
+# TypeScript SDK
+
+`@mercy/sdk` is the application-facing client package. It exposes a client that can call a local runtime through `LocalRuntimeTransport` or a running Mercy API through `HttpTransport`. The workspace packages are marked private, so the current supported installation path is the Mercy monorepo workspace, not a published npm package.
+
+## HTTP usage
+
+The API key is sent in the `Authorization` header by `HttpTransport`; keep it in server-side code. The project must already exist and the API key must be valid for it.
+
+```ts
+import { HttpTransport, MercyClient } from "@mercy/sdk";
+
+const baseUrl = process.env.MERCY_API_URL;
+const apiKey = process.env.MERCY_API_KEY;
+const projectId = process.env.MERCY_TEST_PROJECT_ID;
+
+if (!baseUrl || !apiKey || !projectId) {
+  throw new Error(
+    "MERCY_API_URL, MERCY_API_KEY, and MERCY_TEST_PROJECT_ID are required",
+  );
+}
+
+const mercy = new MercyClient({
+  transport: new HttpTransport({ baseUrl, apiKey }),
+});
+
+const result = await mercy.execute({
+  projectId,
+  type: "create",
+  target: "sdk-check.txt",
+  metadata: { content: "Created through the Mercy SDK" },
+});
+
+if (!result.success) {
+  throw new Error(result.error ?? "Mercy action failed");
+}
+
+const action = await mercy.getAction(result.actionId);
+console.log(action?.status); // "completed"
+
+const undone = await mercy.undo(result.actionId);
+if (!undone.success) {
+  throw new Error(undone.error ?? "Mercy undo failed");
+}
+```
+
+The API's filesystem adapter uses its configured filesystem root, so `target` is relative to that root. For PostgreSQL actions, use the metadata documented in the [PostgreSQL guide](/docs/guides/postgresql).
+
+## Client methods
+
+`MercyClient` forwards these operations to its transport:
+
+- `execute(input, groupId?)`, `undo(actionId)`, `getAction(actionId)`, `listActions(projectId)`
+- `startGroup(input)`, `completeGroup(groupId)`, `undoGroup(groupId)`, `getGroup(groupId)`, `listGroups(projectId)`
+
+`execute` returns an `ActionResult`; `undo` returns an `UndoResult`. Returned unsuccessful results do not throw automatically. The HTTP transport does throw `MercyHttpError` for non-2xx HTTP responses; it contains `status` and `body`.
+
+## Public exports
+
+The package entry point exports:
+
+- `MercyClient`
+- `HttpTransport` and `HttpTransportOptions`
+- `LocalRuntimeTransport` and `MercyRuntimeLike`
+- `MercyTransport`
+- `MercyClientConfig`
+- `MercyHttpError`
+
+See [core API](/docs/reference/core-api), [runtime integration](/docs/guides/runtime-integration), and [environment variables](/docs/reference/environment-variables).

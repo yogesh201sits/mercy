@@ -1,0 +1,47 @@
+---
+title: Adapter API
+description: Type signatures and responsibilities for ActionAdapter implementations.
+---
+
+# Adapter API
+
+An adapter implements `ActionAdapter` from `@mercy/core`. `MercyRuntime` selects the first adapter whose `canHandle` returns true and uses its methods to prepare, capture, execute, verify, and restore a target action.
+
+## Interface
+
+```ts
+import type {
+  Action,
+  ActionInput,
+  ActionResult,
+  CapturedState,
+  PreparedAction,
+  Snapshot,
+  UndoResult,
+  VerificationResult,
+} from "@mercy/core";
+
+interface ActionAdapter {
+  readonly name: string;
+  canHandle(input: ActionInput): boolean;
+  prepare(input: ActionInput): Promise<PreparedAction>;
+  snapshot(action: PreparedAction): Promise<CapturedState>;
+  execute(action: PreparedAction): Promise<ActionResult>;
+  undo(action: Action, snapshot: Snapshot, data: Uint8Array): Promise<UndoResult>;
+  verify(action: Action): Promise<VerificationResult>;
+}
+
+interface VerificationResult {
+  readonly valid: boolean;
+  readonly conflict: boolean;
+  readonly reason?: string;
+}
+```
+
+The displayed interfaces are exact contract shapes; imports are separated into a single illustrative type import. `prepare` should validate adapter-specific metadata and return the action ID provided in input metadata by the runtime. The action's `undoStrategy` is recorded on the journal but adapters still implement the actual restoration behavior.
+
+## Result semantics
+
+Return `{ actionId, success: true, ... }` for successful execution. Return `success: false` and an error for an expected operation failure, or throw when the operation cannot be represented as an action result. On undo, always set `conflict` explicitly; a conflict means the adapter refused restoration because the current state is unsafe to overwrite.
+
+The `snapshot` argument passed to `undo` contains metadata. Its bytes are supplied separately. The core does not encode/decode adapter snapshots or verify storage checksums. See [snapshot concepts](/docs/concepts/snapshots) and the [custom adapter guide](/docs/guides/custom-adapter).

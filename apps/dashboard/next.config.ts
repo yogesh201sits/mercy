@@ -1,7 +1,11 @@
+import nextra from "nextra";
 import type { NextConfig } from "next";
 
+const withNextra = nextra({
+  contentDirBasePath: "/docs",
+});
+
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: true,
   turbopack: {
     rules: {
@@ -13,4 +17,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextra(nextConfig);

@@ -1,0 +1,31 @@
+---
+
+title: SDK
+description: Use Mercy from an application or agent runtime.
+---
+
+# SDK
+
+The Mercy SDK provides a client for executing actions and requesting recovery through supported transports.
+
+## HTTP client
+
+Configure the HTTP transport with your Mercy API URL and project API key.
+
+```ts
+import {
+  HttpTransport,
+  MercyClient,
+} from "@mercy/sdk";
+
+const transport = new HttpTransport({
+  baseUrl: process.env.MERCY_API_URL!,
+  apiKey: process.env.MERCY_API_KEY!,
+});
+
+const mercy = new MercyClient({ transport });
+```
+
+Keep API keys on the server side. Never expose runtime credentials in browser code or commit them to source control.
+
+For all client methods, their response types, local transport, and a complete call example, see the [TypeScript SDK reference](/docs/reference/typescript-sdk).
