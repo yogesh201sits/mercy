@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import Link from "next/link";
+
 export function Cta() {
   const sectionRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -22,7 +24,7 @@ export function Cta() {
         Math.max(
           0,
           (viewportHeight - rect.top) /
-            (section.offsetHeight - viewportHeight)
+          (section.offsetHeight - viewportHeight)
         )
       );
 
@@ -85,12 +87,13 @@ export function Cta() {
                     Get started
                   </a>
 
-                  <a
-                    href="#developers"
+
+                  <Link
+                    href="/docs"
                     className="inline-flex h-12 items-center justify-center border border-white/20 px-6 text-sm font-medium text-white transition-colors hover:border-white/50"
                   >
                     Read the docs
-                  </a>
+                  </Link>
                 </div>
               </div>
 
