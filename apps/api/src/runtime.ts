@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 config({
   path: fileURLToPath(
@@ -12,6 +13,8 @@ import { Pool } from "pg";
 import {
   PostgresActionGroupJournal,
   PostgresActionJournal,
+  PostgresApiKeyStore,
+  PostgresProjectStore,
   PostgresSnapshotStore,
   createPrismaClient,
 } from "@mercy/postgres";
@@ -37,6 +40,8 @@ export interface MercyApiRuntime {
   readonly prisma: ReturnType<typeof createPrismaClient>;
   readonly clientPool: Pool;
   readonly snapshotStorage: LocalSnapshotStorage;
+  readonly projects: PostgresProjectStore;
+  readonly apiKeys: PostgresApiKeyStore;
 }
 
 export function createMercyRuntime(): MercyApiRuntime {
@@ -58,8 +63,10 @@ export function createMercyRuntime(): MercyApiRuntime {
   const snapshotRoot =
     `${process.cwd()}/.real-db-snapshots`;
 
-  const workspaceRoot =
-    `${process.cwd()}/.test-agent-simulation`;
+  const workspaceRoot = resolve(
+    process.env["MERCY_TEST_FILESYSTEM_ROOT"] ??
+      `${process.cwd()}/.test-agent-simulation`,
+  );
 
   const snapshotStorage =
     new LocalSnapshotStorage(snapshotRoot);
@@ -75,6 +82,12 @@ export function createMercyRuntime(): MercyApiRuntime {
       prisma,
       snapshotStorage,
     );
+
+  const projects =
+    new PostgresProjectStore(prisma);
+
+  const apiKeys =
+    new PostgresApiKeyStore(prisma);
 
   const filesystemAdapter =
     new FilesystemAdapter(workspaceRoot);
@@ -100,5 +113,7 @@ export function createMercyRuntime(): MercyApiRuntime {
     prisma,
     clientPool,
     snapshotStorage,
+    projects,
+    apiKeys,
   };
 }

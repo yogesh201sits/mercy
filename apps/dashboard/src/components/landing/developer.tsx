@@ -215,51 +215,55 @@ export function Developer() {
               className="mt-8 flex flex-wrap gap-3"
               variants={reveal}
             >
-              {technologies.map((technology, index) => (
-                <motion.span
-                  key={technology}
-                  className="border border-black px-3 py-1.5 font-mono text-xs"
-                  initial={
-                    shouldReduceMotion
-                      ? {
-                          opacity: 1,
-                          y: 0,
-                        }
-                      : {
-                          opacity: 0,
-                          y: 12,
-                        }
-                  }
-                  whileInView={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  viewport={{
-                    once: true,
-                  }}
-                  transition={{
-                    duration: 0.45,
-                    delay: shouldReduceMotion
-                      ? 0
-                      : 0.35 + index * 0.1,
-                    ease: "easeOut",
-                  }}
-                  whileHover={
-                    shouldReduceMotion
-                      ? undefined
-                      : {
-                          y: -3,
-                          backgroundColor: "#050505",
-                          color: "#ffffff",
-                          transition: {
-                            duration: 0.2,
-                          },
-                        }
-                  }
-                >
-                  {technology}
-                </motion.span>
-              ))}
+              {technologies.map((technology, index) => {
+                const hoverProps = shouldReduceMotion
+                  ? {}
+                  : {
+                      whileHover: {
+                        y: -3,
+                        backgroundColor: "#050505",
+                        color: "#ffffff",
+                        transition: {
+                          duration: 0.2,
+                        },
+                      },
+                    };
+
+                return (
+                  <motion.span
+                    key={technology}
+                    className="border border-black px-3 py-1.5 font-mono text-xs"
+                    initial={
+                      shouldReduceMotion
+                        ? {
+                            opacity: 1,
+                            y: 0,
+                          }
+                        : {
+                            opacity: 0,
+                            y: 12,
+                          }
+                    }
+                    whileInView={{
+                      opacity: 1,
+                      y: 0,
+                    }}
+                    viewport={{
+                      once: true,
+                    }}
+                    transition={{
+                      duration: 0.45,
+                      delay: shouldReduceMotion
+                        ? 0
+                        : 0.35 + index * 0.1,
+                      ease: "easeOut",
+                    }}
+                    {...hoverProps}
+                  >
+                    {technology}
+                  </motion.span>
+                );
+              })}
             </motion.div>
 
             {/* Runtime indicator */}
@@ -303,17 +307,17 @@ export function Developer() {
               once: true,
               amount: 0.2,
             }}
-            whileHover={
-              shouldReduceMotion
-                ? undefined
-                : {
+            {...(shouldReduceMotion
+              ? {}
+              : {
+                  whileHover: {
                     y: -6,
                     transition: {
                       duration: 0.35,
                       ease: "easeOut",
                     },
-                  }
-            }
+                  },
+                })}
             style={{
               perspective: 1200,
             }}
@@ -348,14 +352,14 @@ export function Developer() {
                   <div className="flex items-center gap-2">
                     <motion.span
                       className="h-2 w-2 bg-[#39FF14]"
-                      animate={
-                        shouldReduceMotion
-                          ? undefined
-                          : {
+                      {...(shouldReduceMotion
+                        ? {}
+                        : {
+                            animate: {
                               opacity: [1, 0.35, 1],
                               scale: [1, 0.85, 1],
-                            }
-                      }
+                            },
+                          })}
                       transition={{
                         duration: 1.8,
                         repeat: Infinity,
@@ -370,13 +374,13 @@ export function Developer() {
 
                   <motion.span
                     className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/30"
-                    animate={
-                      shouldReduceMotion
-                        ? undefined
-                        : {
+                    {...(shouldReduceMotion
+                      ? {}
+                      : {
+                          animate: {
                             opacity: [0.3, 0.65, 0.3],
-                          }
-                    }
+                          },
+                        })}
                     transition={{
                       duration: 3,
                       repeat: Infinity,
@@ -641,13 +645,13 @@ function StatusCard({
     <motion.div
       className="border-b border-white/10 px-5 py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"
       variants={variants}
-      whileHover={
-        shouldReduceMotion
-          ? undefined
-          : {
+      {...(shouldReduceMotion
+        ? {}
+        : {
+            whileHover: {
               backgroundColor: "rgba(255,255,255,0.035)",
-            }
-      }
+            },
+          })}
     >
       <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/30">
         {label}
@@ -657,13 +661,13 @@ function StatusCard({
         {accent && (
           <motion.span
             className="h-1.5 w-1.5 bg-[#39FF14]"
-            animate={
-              shouldReduceMotion
-                ? undefined
-                : {
+            {...(shouldReduceMotion
+              ? {}
+              : {
+                  animate: {
                     opacity: [1, 0.35, 1],
-                  }
-            }
+                  },
+                })}
             transition={{
               duration: 1.5,
               repeat: Infinity,

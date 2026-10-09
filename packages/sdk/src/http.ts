@@ -1,24 +1,32 @@
 import { MercyHttpError } from "./error";
 
+export interface RequestOptions extends RequestInit {
+  apiKey?: string;
+}
+
 export async function request<T>(
   baseUrl: string,
   path: string,
-  options: RequestInit = {},
+  options: RequestOptions = {},
 ): Promise<T> {
+  const { apiKey, headers: suppliedHeaders, ...init } = options;
+
+  const headers = new Headers(suppliedHeaders);
+  headers.set("Content-Type", "application/json");
+
+  if (apiKey) {
+    headers.set("Authorization", `Bearer ${apiKey}`);
+  }
+
   const response = await fetch(
-    `${baseUrl}${path}`,
+    `${baseUrl.replace(/\/+$/, "")}${path}`,
     {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
+      ...init,
+      headers,
     },
   );
 
-  const contentType = response.headers.get(
-    "content-type",
-  );
+  const contentType = response.headers.get("content-type");
 
   const body = contentType?.includes("application/json")
     ? await response.json()

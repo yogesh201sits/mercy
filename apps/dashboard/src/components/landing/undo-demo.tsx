@@ -28,7 +28,7 @@ const steps = [
     value: "users/182",
     detail: "SAFE",
   },
-];
+] as const;
 
 export function UndoDemo() {
   const [step, setStep] = useState(0);
@@ -41,7 +41,7 @@ export function UndoDemo() {
     return () => clearInterval(interval);
   }, []);
 
-  const current = steps[step];
+  const current = steps[step] ?? steps[0];
 
   return (
     <div className="w-full max-w-md border border-black/15 bg-white text-black shadow-[6px_6px_0_#39FF14]">
@@ -112,9 +112,7 @@ export function UndoDemo() {
 
                 <span
                   className={`font-mono text-[9px] ${
-                    active
-                      ? "text-black"
-                      : "text-black/40"
+                    active ? "text-black" : "text-black/40"
                   }`}
                 >
                   {item.label}

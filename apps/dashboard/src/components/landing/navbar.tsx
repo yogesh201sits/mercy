@@ -1,26 +1,32 @@
 "use client";
 
+import {
+  SignInButton,
+  SignUpButton,
+  UserButton,
+  useAuth,
+} from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const { isSignedIn } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 40);
     };
 
-
     handleScroll();
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
-
-
   }, []);
 
   return (
@@ -41,11 +47,15 @@ export function Navbar() {
       className="sticky top-0 z-50 mx-auto border border-black/10 bg-white"
     >
       <div
-        className={`mx-auto flex items-center justify-between px-6 transition-all duration-300 lg:px-8 ${scrolled ? "h-14" : "h-16"
-          }`}
+        className={`mx-auto flex items-center justify-between px-6 transition-all duration-300 lg:px-8 ${
+          scrolled ? "h-14" : "h-16"
+        }`}
       >
-        {/* Brand */} 
-        <a href="/" className="flex items-center">
+        {/* Brand */}
+        <a
+          href="/"
+          className="flex items-center"
+        >
           <img
             src="/logo.png"
             alt="Mercy"
@@ -88,26 +98,49 @@ export function Navbar() {
           </a>
         </motion.div>
 
-        {/* CTA */}
-        <motion.a
-          href="/dashboard"
-          animate={{
-            paddingLeft: scrolled ? 14 : 16,
-            paddingRight: scrolled ? 14 : 16,
-            paddingTop: scrolled ? 7 : 8,
-            paddingBottom: scrolled ? 7 : 8,
-          }}
-          transition={{
-            duration: 0.3,
-            ease: [0.22, 1, 0.36, 1],
-          }}
-          className="border border-black bg-black text-sm font-medium text-[#39FF14] transition-colors hover:bg-[#39FF14] hover:text-black"
-        >
-          Get started
-        </motion.a>
+      {/* Authentication */}
+      <div className="flex items-center gap-2">
+        {isSignedIn ? (
+          <>
+            <a
+              href="/dashboard"
+              className="border border-black bg-black px-4 py-2 text-sm font-medium text-[#39FF14] transition-colors hover:bg-[#39FF14] hover:text-black"
+            >
+              Dashboard
+            </a>
+
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: "h-8 w-8",
+                },
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <SignInButton mode="modal">
+              <button
+                type="button"
+                className="border border-black/10 px-4 py-2 text-sm font-medium transition-colors hover:border-black/30"
+              >
+                Sign in
+              </button>
+            </SignInButton>
+
+            <SignUpButton mode="modal">
+              <button
+                type="button"
+                className="border border-black bg-black px-4 py-2 text-sm font-medium text-[#39FF14] transition-colors hover:bg-[#39FF14] hover:text-black"
+              >
+                Sign up
+              </button>
+            </SignUpButton>
+          </>
+        )}
+      </div>
+      
       </div>
     </motion.nav>
-
-
   );
 }

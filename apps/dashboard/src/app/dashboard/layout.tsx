@@ -1,23 +1,52 @@
-import type { ReactNode } from "react";
+import { auth } from "@clerk/nextjs/server";
 
-import { Sidebar, Topbar } from "@/components/dashboard";
+import {
+listProjects,
+} from "@/lib/mercy-api";
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return (
-    <div className="min-h-screen bg-white text-black">
-      <Sidebar />
+import {
+ProjectProvider,
+} from "@/components/dashboard/project-provider";
 
-      <div className="min-h-screen lg:pl-60">
-        <Topbar />
+import {
+Sidebar,
+} from "@/components/dashboard/sidebar";
 
-        <main className="min-h-[calc(100vh-4rem)] bg-[#F7F7F7]">
-          {children}
-        </main>
-      </div>
+import {
+Topbar,
+} from "@/components/dashboard/topbar";
+
+export default async function DashboardLayout({
+children,
+}: Readonly<{
+children: React.ReactNode;
+}>) {
+const { getToken } = await auth();
+
+const token = await getToken();
+
+if (!token) {
+throw new Error(
+"Unable to authenticate with Mercy API.",
+);
+}
+
+const projects =
+await listProjects(token);
+
+return ( <ProjectProvider
+   projects={projects}
+ > <div className="min-h-screen bg-white"> <Sidebar />
+
+    <div className="lg:pl-64">
+      <Topbar />
+
+      <main>
+        {children}
+      </main>
     </div>
-  );
+  </div>
+</ProjectProvider>
+
+);
 }
