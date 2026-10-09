@@ -1,3 +1,17 @@
+import { auth } from "@clerk/nextjs/server";
+
+import { CreateProjectForm } from "@/components/dashboard/create-project-form";
+import {
+  listProjects,
+} from "@/lib/mercy-api";
+import { resolveProject } from "@/lib/dashboard-project";
+
+interface SystemsPageProps {
+  searchParams: Promise<{
+    project?: string;
+  }>;
+}
+
 const systems = [
   {
     name: "Filesystem",
@@ -43,7 +57,33 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export default function SystemsPage() {
+export default async function SystemsPage({
+  searchParams,
+}: SystemsPageProps) {
+  const { getToken } = await auth();
+  const token = await getToken();
+
+  if (!token) {
+    throw new Error(
+      "Unable to authenticate with Mercy API.",
+    );
+  }
+
+  const projects = await listProjects(token);
+  const params = await searchParams;
+  const project = resolveProject(
+    projects,
+    params.project,
+  );
+
+  if (!project) {
+    return (
+      <div className="mx-auto max-w-xl px-6 py-10">
+        <CreateProjectForm />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8 lg:py-10">
       {/* Header */}
@@ -66,7 +106,7 @@ export default function SystemsPage() {
           </div>
 
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-black/35">
-            project / default
+            project / {project.id}
           </div>
         </div>
       </div>

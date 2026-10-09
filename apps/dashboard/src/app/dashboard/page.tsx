@@ -1,16 +1,13 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 
-import { listActions } from "@/lib/mercy-api";
-
 import {
+  listActions,
   listProjects,
 } from "@/lib/mercy-api";
+import { resolveProject } from "@/lib/dashboard-project";
 
 import { CreateProjectForm } from "@/components/dashboard/create-project-form";
-
-let PROJECT_ID =
-  "real-db-ab69cf62-0912-4d9e-8e36-780bcc3665aa";
 
 function formatRelativeTime(date: Date): string {
   const diff = Date.now() - date.getTime();
@@ -71,32 +68,24 @@ export default async function DashboardPage({
   }
 
   const projects = await listProjects(token);
-
-  if (projects.length === 0) {
-  return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-6">
-      <CreateProjectForm />
-    </div>
-  );
-}
-
- 
-
   const params = await searchParams;
+  const project = resolveProject(
+    projects,
+    params.project,
+  );
 
-  const requestedProjectId =
-    params.project;
+  if (!project) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-6">
+        <CreateProjectForm />
+      </div>
+    );
+  }
 
-  const project =
-    projects.find(
-      (item) =>
-        item.id === requestedProjectId,
-    ) ?? projects[0];
-
-  PROJECT_ID = project.id;
+  const projectId = project.id;
 
   const actions = await listActions(
-    PROJECT_ID,
+    projectId,
     token,
   );
 
@@ -143,7 +132,7 @@ export default async function DashboardPage({
           <div className="font-mono text-xs text-black/40">
             project:{" "}
             <span className="text-black">
-              {PROJECT_ID}
+              {projectId}
             </span>
           </div>
         </div>
@@ -204,7 +193,7 @@ export default async function DashboardPage({
               </div>
 
               <Link
-                href="/dashboard/actions"
+                href={`/dashboard/actions?project=${encodeURIComponent(projectId)}`}
                 className="font-mono text-[10px] uppercase tracking-[0.12em] text-black/40 transition-colors hover:text-black"
               >
                 View all →
@@ -228,7 +217,7 @@ export default async function DashboardPage({
                 {recentActions.map((action) => (
                   <Link
                     key={action.id}
-                    href={`/dashboard/actions/${action.id}`}
+                    href={`/dashboard/actions/${action.id}?project=${encodeURIComponent(projectId)}`}
                     className="block px-5 py-4 transition-colors hover:bg-[#F7F7F7]"
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -298,7 +287,7 @@ export default async function DashboardPage({
                 </p>
 
                 <p className="mt-2 font-mono text-xs text-white/70">
-                  {PROJECT_ID}
+                  {projectId}
                 </p>
               </div>
 

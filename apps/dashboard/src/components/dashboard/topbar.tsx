@@ -3,6 +3,7 @@
 import {
 usePathname,
 useRouter,
+useSearchParams,
 } from "next/navigation";
 import { useEffect } from "react";
 
@@ -34,14 +35,10 @@ return "Dashboard";
 export function Topbar() {
 const pathname = usePathname();
 const router = useRouter();
+const searchParams = useSearchParams();
 
 const projects = useProjectStore(
 (state) => state.projects,
-);
-
-const selectedProjectId =
-useProjectStore(
-(state) => state.selectedProjectId,
 );
 
 const setSelectedProject =
@@ -49,30 +46,15 @@ useProjectStore(
 (state) => state.setSelectedProject,
 );
 
-const setProjects = useProjectStore(
-(state) => state.setProjects,
-);
+const urlProjectId = searchParams.get("project");
+const selectedProjectId =
+urlProjectId ?? projects[0]?.id ?? null;
 
 useEffect(() => {
-if (projects.length === 0) {
-return;
+if (selectedProjectId) {
+  setSelectedProject(selectedProjectId);
 }
-
-if (
-  selectedProjectId === null ||
-  !projects.some(
-    (project) =>
-      project.id === selectedProjectId,
-  )
-) {
-  setProjects(projects);
-}
-
-}, [
-projects,
-selectedProjectId,
-setProjects,
-]);
+}, [selectedProjectId, setSelectedProject]);
 
 const title = getTitle(pathname);
 
@@ -88,14 +70,8 @@ const projectId = event.target.value;
 
 setSelectedProject(projectId);
 
-const params = new URLSearchParams(
-  window.location.search,
-);
-
-params.set("project", projectId);
-
 router.push(
-  `${pathname}?${params.toString()}`,
+  `/dashboard?project=${encodeURIComponent(projectId)}`,
 );
 
 }

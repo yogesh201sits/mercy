@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 
 import { undoAction } from "@/lib/mercy-api";
 
@@ -12,6 +13,7 @@ readonly actionId: string;
 export function UndoActionButton({
 actionId,
 }: UndoActionButtonProps) {
+const { getToken } = useAuth();
 const router = useRouter();
 
 const [status, setStatus] = useState<
@@ -26,7 +28,15 @@ setStatus("undoing");
 setMessage(null);
 
 try {
-  const result = await undoAction(actionId);
+  const token = await getToken();
+
+  if (!token) {
+    throw new Error(
+      "Unable to authenticate with Mercy API.",
+    );
+  }
+
+  const result = await undoAction(actionId, token);
 
   if (result.conflict) {
     setStatus("conflict");

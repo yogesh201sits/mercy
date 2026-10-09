@@ -5,6 +5,8 @@ import {
   listGroups,
   listProjects,
 } from "@/lib/mercy-api";
+import { resolveProject } from "@/lib/dashboard-project";
+import { CreateProjectForm } from "@/components/dashboard/create-project-form";
 
 interface GroupsPageProps {
   searchParams: Promise<{
@@ -68,51 +70,22 @@ export default async function GroupsPage({
     );
   }
 
-  const projects =
-    await listProjects(token);
+  const projects = await listProjects(token);
+  const params = await searchParams;
+  const project = resolveProject(
+    projects,
+    params.project,
+  );
 
-  /*
-  
-  * No projects
-    */
-  if (projects.length === 0) {
+  if (!project) {
     return (
-
-      <div className="p-6 lg:p-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="border border-black/10 bg-white px-5 py-16 text-center">
-            <div className="mx-auto h-2 w-2 bg-[#39FF14]" />
-
-            <p className="mt-5 text-sm font-medium">
-              No projects yet
-            </p>
-
-            <p className="mt-2 text-sm text-black/40">
-              Create a project before viewing recovery groups.
-            </p>
-          </div>
-
-        </div>
+      <div className="mx-auto max-w-xl px-6 py-10">
+        <CreateProjectForm />
       </div>
-
     );
-
   }
 
-  const params =
-    await searchParams;
-
-  const requestedProjectId =
-    params.project;
-
-  const project =
-    projects.find(
-      (item) =>
-        item.id === requestedProjectId,
-    ) ?? projects[0];
-
-  const projectId =
-    project.id;
+  const projectId = project.id;
 
   const groups =
     await listGroups(

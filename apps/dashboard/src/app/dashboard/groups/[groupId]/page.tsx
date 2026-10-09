@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 
 import { UndoGroupButton } from "@/components/dashboard";
 
@@ -44,15 +45,23 @@ export default async function GroupDetailPage({
 params,
 }: GroupDetailPageProps) {
 const { groupId } = await params;
+const { getToken } = await auth();
+const token = await getToken();
 
-const group = await getGroup(groupId);
+if (!token) {
+throw new Error(
+"Unable to authenticate with Mercy API.",
+);
+}
+
+const group = await getGroup(groupId, token);
 
 if (!group) {
 notFound();
 }
 
 const actions = await Promise.all(
-group.actionIds.map((actionId) => getAction(actionId)),
+group.actionIds.map((actionId) => getAction(actionId, token)),
 );
 
 const resolvedActions = actions.filter(

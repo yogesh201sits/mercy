@@ -1,138 +1,108 @@
 import type {
-    Action,
-    ActionGroup,
-    ActionGroupInput,
-    ActionInput,
-    ActionResult,
-    GroupUndoResult,
-    UndoResult,
+  Action,
+  ActionGroup,
+  ActionGroupInput,
+  ActionInput,
+  ActionResult,
+  GroupUndoResult,
+  UndoResult,
 } from "@mercy/core";
 
 import { request } from "./http";
 import type { MercyTransport } from "./transport";
 
 export interface HttpTransportOptions {
-    readonly baseUrl: string;
+  readonly baseUrl: string;
+  readonly apiKey: string;
 }
 
 export class HttpTransport implements MercyTransport {
-    private readonly baseUrl: string;
+  private readonly baseUrl: string;
+  private readonly apiKey: string;
 
-    constructor(options: HttpTransportOptions) {
-        this.baseUrl = options.baseUrl.replace(/\/+$/, "");
-    }
+  constructor(options: HttpTransportOptions) {
+    this.baseUrl = options.baseUrl.replace(/\/+$/, "");
+    this.apiKey = options.apiKey;
+  }
 
-    async execute(
-        input: ActionInput,
-        groupId?: string,
-    ): Promise<ActionResult> {
-        return request<ActionResult>(
-            this.baseUrl,
-            `/projects/${encodeURIComponent(input.projectId)}/actions`,
-            {
-                method: "POST",
-                body: JSON.stringify({
-                    ...input,
-                    ...(groupId ? { groupId } : {}),
-                }),
-            },
-        );
-    }
+  private request<T>(
+    path: string,
+    options: RequestInit = {},
+  ): Promise<T> {
+    return request<T>(this.baseUrl, path, {
+      ...options,
+      apiKey: this.apiKey,
+    });
+  }
 
-    async undo(
-        actionId: string,
-    ): Promise<UndoResult> {
-        return request<UndoResult>(
-            this.baseUrl,
-            `/actions/${encodeURIComponent(actionId)}/undo`,
-            {
-                method: "POST",
-            },
-        );
-    }
+  execute(
+    input: ActionInput,
+    groupId?: string,
+  ): Promise<ActionResult> {
+    return this.request(
+      `/projects/${encodeURIComponent(input.projectId)}/actions`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          ...input,
+          ...(groupId ? { groupId } : {}),
+        }),
+      },
+    );
+  }
 
-    async getAction(
-        actionId: string,
-    ): Promise<Action | null> {
-        return request<Action | null>(
-            this.baseUrl,
-            `/actions/${encodeURIComponent(actionId)}`,
-            {
-                method: "GET",
-            },
-        );
-    }
+  undo(actionId: string): Promise<UndoResult> {
+    return this.request(
+      `/actions/${encodeURIComponent(actionId)}/undo`,
+      { method: "POST" },
+    );
+  }
 
-    async listActions(
-        projectId: string,
-    ): Promise<readonly Action[]> {
-        return request<readonly Action[]>(
-            this.baseUrl,
-            `/projects/${encodeURIComponent(projectId)}/actions`,
-            {
-                method: "GET",
-            },
-        );
-    }
+  getAction(actionId: string): Promise<Action | null> {
+    return this.request(
+      `/actions/${encodeURIComponent(actionId)}`,
+    );
+  }
 
-    async startGroup(
-        input: ActionGroupInput,
-    ): Promise<ActionGroup> {
-        return request<ActionGroup>(
-            this.baseUrl,
-            `/projects/${encodeURIComponent(input.projectId)}/groups`,
-            {
-                method: "POST",
-                body: JSON.stringify(input),
-            },
-        );
-    }
+  listActions(projectId: string): Promise<readonly Action[]> {
+    return this.request(
+      `/projects/${encodeURIComponent(projectId)}/actions`,
+    );
+  }
 
-    async completeGroup(
-        groupId: string,
-    ): Promise<ActionGroup> {
-        return request<ActionGroup>(
-            this.baseUrl,
-            `/groups/${encodeURIComponent(groupId)}/complete`,
-            {
-                method: "POST",
-            },
-        );
-    }
+  startGroup(input: ActionGroupInput): Promise<ActionGroup> {
+    return this.request(
+      `/projects/${encodeURIComponent(input.projectId)}/groups`,
+      {
+        method: "POST",
+        body: JSON.stringify(input),
+      },
+    );
+  }
 
-    async undoGroup(
-        groupId: string,
-    ): Promise<GroupUndoResult> {
-        return request<GroupUndoResult>(
-            this.baseUrl,
-            `/groups/${encodeURIComponent(groupId)}/undo`,
-            {
-                method: "POST",
-            },
-        );
-    }
+  completeGroup(groupId: string): Promise<ActionGroup> {
+    return this.request(
+      `/groups/${encodeURIComponent(groupId)}/complete`,
+      { method: "POST" },
+    );
+  }
 
-    async getGroup(
-        groupId: string,
-    ): Promise<ActionGroup> {
-        return request<ActionGroup>(
-            this.baseUrl,
-            `/groups/${encodeURIComponent(groupId)}`,
-            {
-                method: "GET",
-            },
-        );
-    }
+  undoGroup(groupId: string): Promise<GroupUndoResult> {
+    return this.request(
+      `/groups/${encodeURIComponent(groupId)}/undo`,
+      { method: "POST" },
+    );
+  }
 
-    async listGroups(
-        projectId: string,
-    ): Promise<readonly ActionGroup[]> {
-        return request<readonly ActionGroup[]>(
-            this.baseUrl,
-            `/projects/${encodeURIComponent(projectId)}/groups`,
-            {
-                method: "GET",
-            },
-        );
-    }
+  getGroup(groupId: string): Promise<ActionGroup> {
+    return this.request(
+      `/groups/${encodeURIComponent(groupId)}`,
+    );
+  }
+
+  listGroups(projectId: string): Promise<readonly ActionGroup[]> {
+    return this.request(
+      `/projects/${encodeURIComponent(projectId)}/groups`,
+    );
+  }
 }

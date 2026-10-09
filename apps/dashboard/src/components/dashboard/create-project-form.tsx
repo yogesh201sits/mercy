@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -6,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 import {
   createProject,
+  MercyApiError,
 } from "@/lib/mercy-api";
 
 export function CreateProjectForm() {
@@ -13,7 +15,7 @@ export function CreateProjectForm() {
   const router = useRouter();
 
   const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(
     null,
   );
@@ -37,7 +39,7 @@ export function CreateProjectForm() {
       return;
     }
 
-    setLoading(true);
+    setCreating(true);
     setError(null);
 
     try {
@@ -45,93 +47,96 @@ export function CreateProjectForm() {
 
       if (!token) {
         throw new Error(
-          "Unable to authenticate with Mercy.",
+          "Unable to authenticate with Mercy API.",
         );
       }
 
-      const project =
-        await createProject(
-          {
-            name: trimmedName,
-          },
-          token,
-        );
-
-      localStorage.setItem(
-        "mercy:selected-project",
-        project.id,
+      const project = await createProject(
+        { name: trimmedName },
+        token,
       );
 
-      router.push("/dashboard");
+      router.push(
+        `/dashboard?project=${encodeURIComponent(project.id)}`,
+      );
+
       router.refresh();
     } catch (error) {
       setError(
-        error instanceof Error
+        error instanceof MercyApiError
           ? error.message
-          : "Failed to create project.",
+          : error instanceof Error
+            ? error.message
+            : "Failed to create project.",
       );
     } finally {
-      setLoading(false);
+      setCreating(false);
     }
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-md border border-black/10 bg-white"
+      className="border border-black/10 p-5"
     >
-      <div className="border-b border-black/10 px-6 py-5">
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-black/40">
-          Project setup
-        </p>
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-black/40">
+        New project
+      </p>
 
-        <h2 className="mt-2 text-lg font-semibold tracking-[-0.02em]">
-          Create your first project
-        </h2>
+      <h2 className="mt-2 text-sm font-semibold">
+        Project details
+      </h2>
 
-        <p className="mt-2 text-sm leading-6 text-black/50">
-          Projects separate your agent actions,
-          recovery state, and API keys.
-        </p>
+      <p className="mt-2 text-xs leading-5 text-black/50">
+        Projects isolate your agents, actions, API keys,
+        and recovery history.
+      </p>
+
+      <div className="mt-5">
+        <label
+          htmlFor="project-name"
+          className="font-mono text-[10px] uppercase tracking-[0.12em] text-black/40"
+        >
+          Name
+        </label>
+
+        <input
+          id="project-name"
+          type="text"
+          value={name}
+          onChange={(event) =>
+            setName(event.target.value)
+          }
+          placeholder="e.g. production"
+          maxLength={100}
+          disabled={creating}
+          autoFocus
+          className="mt-2 h-10 w-full border border-black/10 px-3 font-mono text-xs outline-none placeholder:text-black/25 focus:border-black"
+        />
       </div>
 
-      <div className="space-y-5 p-6">
-        <div>
-          <label
-            htmlFor="project-name"
-            className="font-mono text-[10px] uppercase tracking-[0.14em] text-black/50"
-          >
-            Project name
-          </label>
+      {error ? (
+        <p className="mt-3 font-mono text-[10px] text-red-600">
+          {error}
+        </p>
+      ) : null}
 
-          <input
-            id="project-name"
-            type="text"
-            value={name}
-            onChange={(event) =>
-              setName(event.target.value)
-            }
-            placeholder="My AI Agent"
-            maxLength={100}
-            disabled={loading}
-            className="mt-2 h-11 w-full border border-black/15 bg-white px-3 text-sm outline-none transition-colors placeholder:text-black/25 focus:border-black disabled:cursor-not-allowed disabled:bg-black/[0.03]"
-          />
-        </div>
-
-        {error ? (
-          <div className="border border-black/15 bg-black/[0.03] px-3 py-2.5 text-sm text-black/70">
-            {error}
-          </div>
-        ) : null}
+      <div className="mt-5 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          disabled={creating}
+          className="font-mono text-[10px] uppercase tracking-[0.12em] text-black/40 transition-colors hover:text-black"
+        >
+          Cancel
+        </button>
 
         <button
           type="submit"
-          disabled={loading}
-          className="flex h-11 w-full items-center justify-center border border-black bg-black text-sm font-medium text-[#39FF14] transition-colors hover:bg-[#39FF14] hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={creating}
+          className="h-10 border border-black bg-black px-5 font-mono text-[10px] uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#39FF14] hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {loading
-            ? "Creating project..."
-            : "Create project"}
+          {creating ? "Creating..." : "Create project"}
         </button>
       </div>
     </form>

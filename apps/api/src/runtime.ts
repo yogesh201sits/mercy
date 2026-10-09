@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 config({
   path: fileURLToPath(
@@ -62,8 +63,10 @@ export function createMercyRuntime(): MercyApiRuntime {
   const snapshotRoot =
     `${process.cwd()}/.real-db-snapshots`;
 
-  const workspaceRoot =
-    `${process.cwd()}/.test-agent-simulation`;
+  const workspaceRoot = resolve(
+    process.env["MERCY_TEST_FILESYSTEM_ROOT"] ??
+      `${process.cwd()}/.test-agent-simulation`,
+  );
 
   const snapshotStorage =
     new LocalSnapshotStorage(snapshotRoot);

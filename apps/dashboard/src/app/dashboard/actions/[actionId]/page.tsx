@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 
 import { getAction } from "@/lib/mercy-api";
 
@@ -75,8 +76,16 @@ export default async function ActionDetailPage({
   params: Promise<{ actionId: string }>;
 }) {
   const { actionId } = await params;
+  const { getToken } = await auth();
+  const token = await getToken();
 
-  const action = await getAction(actionId);
+  if (!token) {
+    throw new Error(
+      "Unable to authenticate with Mercy API.",
+    );
+  }
+
+  const action = await getAction(actionId, token);
 
   if (!action) {
     notFound();

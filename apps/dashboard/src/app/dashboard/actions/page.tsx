@@ -5,6 +5,8 @@ import {
   listActions,
   listProjects,
 } from "@/lib/mercy-api";
+import { resolveProject } from "@/lib/dashboard-project";
+import { CreateProjectForm } from "@/components/dashboard/create-project-form";
 
 interface ActionsPageProps {
   searchParams: Promise<{
@@ -70,25 +72,19 @@ export default async function ActionsPage({
   }
 
   const projects = await listProjects(token);
+  const params = await searchParams;
+  const project = resolveProject(
+    projects,
+    params.project,
+  );
 
-  if (projects.length === 0) {
+  if (!project) {
     return (
-      <div className="p-6">
-        <p className="text-sm text-black/50">
-          No projects found.
-        </p>
+      <div className="mx-auto max-w-xl px-6 py-10">
+        <CreateProjectForm />
       </div>
     );
   }
-
-  const params = await searchParams;
-
-  const requestedProjectId = params.project;
-
-  const project =
-    projects.find(
-      (item) => item.id === requestedProjectId,
-    ) ?? projects[0];
 
   const projectId = project.id;
 

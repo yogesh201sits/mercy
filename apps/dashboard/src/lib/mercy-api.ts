@@ -227,3 +227,62 @@ readonly service: string;
 }> {
 return request("/health");
 }
+
+
+export interface ApiKey {
+readonly id: string;
+readonly projectId: string;
+readonly name: string;
+readonly keyPrefix: string;
+readonly createdAt: string;
+readonly lastUsedAt?: string | null;
+readonly revokedAt?: string | null;
+}
+
+export interface CreatedApiKey
+extends ApiKey {
+readonly secret: string;
+}
+
+export interface CreateApiKeyInput {
+readonly name: string;
+}
+
+export async function listApiKeys(
+projectId: string,
+token?: string,
+): Promise<readonly ApiKey[]> {
+return request<readonly ApiKey[]>(
+`/dashboard/projects/${encodeURIComponent(projectId)}/api-keys`,
+{ token },
+);
+}
+
+export async function createApiKey(
+projectId: string,
+input: CreateApiKeyInput,
+token?: string,
+): Promise<CreatedApiKey> {
+return request<CreatedApiKey>(
+`/dashboard/projects/${encodeURIComponent(projectId)}/api-keys`,
+{
+method: "POST",
+token,
+body: JSON.stringify(input),
+},
+);
+}
+
+export async function revokeApiKey(
+projectId: string,
+keyId: string,
+token?: string,
+): Promise<ApiKey> {
+return request<ApiKey>(
+`/dashboard/projects/${encodeURIComponent(projectId)}/api-keys/${encodeURIComponent(keyId)}/revoke`,
+{
+method: "POST",
+token,
+},
+);
+}

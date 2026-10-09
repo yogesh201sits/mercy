@@ -1,78 +1,39 @@
 import { Hono } from "hono";
 
 import type {
+  MercyEnv,
+} from "../auth/context";
+
+import {
+  requireClerkAuth,
+} from "../auth/middleware";
+
+import {
+  requireClerkProjectAccess,
+} from "../auth/clerk-project-middleware";
+
+import type {
   PostgresApiKeyStore,
   PostgresProjectStore,
 } from "@mercy/postgres";
-
-import {
-  authUserKey,
-  requireClerkAuth,
-  type AuthUser,
-} from "../auth/middleware";
-
-function getUserId(
-  c: Parameters<typeof requireClerkAuth>[0],
-): string {
-  const user = c.get(authUserKey) as AuthUser | undefined;
-
-  if (!user) {
-    throw new Error("Authentication context is missing");
-  }
-
-  return user.userId;
-}
 
 export function createApiKeyRoutes(
   projects: PostgresProjectStore,
   apiKeys: PostgresApiKeyStore,
 ) {
-  const app = new Hono();
+  const app = new Hono<MercyEnv>();
 
   /*
-   * Create API key
-   *
-   * POST /projects/:projectId/api-keys
-   */
+  
+  * Create API key
+  *
+  * POST /dashboard/projects/:projectId/api-keys
+    */
   app.post(
-    "/projects/:projectId/api-keys",
+    "/dashboard/projects/:projectId/api-keys",
     requireClerkAuth,
+    requireClerkProjectAccess(projects),
     async (c) => {
-      const userId = getUserId(c);
-      const projectId = c.req.param("projectId");
-      if (!projectId) {
-        return c.json(
-            {
-            error: "Bad Request",
-            message: "Project ID is required",
-            },
-            400,
-        );
-      }
-
-      const project =
-        await projects.get(projectId);
-
-      if (!project) {
-        return c.json(
-          {
-            error: "Not Found",
-            message: "Project not found",
-          },
-          404,
-        );
-      }
-
-      if (project.clerkUserId !== userId) {
-        return c.json(
-          {
-            error: "Forbidden",
-            message: "You do not have access to this project",
-          },
-          403,
-        );
-      }
-
       let body: {
         name?: unknown;
       };
@@ -115,166 +76,192 @@ export function createApiKeyRoutes(
         );
       }
 
-      const created =
-        await apiKeys.create({
-          projectId,
-          name,
-        });
-
-      /*
-       * The secret is returned exactly once.
-       * Only the hash is persisted.
-       */
-      return c.json(
-        {
-          id: created.apiKey.id,
-          projectId: created.apiKey.projectId,
-          name: created.apiKey.name,
-          keyPrefix: created.apiKey.keyPrefix,
-          createdAt: created.apiKey.createdAt,
-          secret: created.secret,
-        },
-        201,
-      );
-    },
-  );
-
-  /*
-   * List API keys
-   *
-   * GET /projects/:projectId/api-keys
-   */
-  app.get(
-    "/projects/:projectId/api-keys",
-    requireClerkAuth,
-    async (c) => {
-      const userId = getUserId(c);
-      const projectId = c.req.param("projectId");
-            if (!projectId) {
-        return c.json(
-            {
-            error: "Bad Request",
-            message: "Project ID is required",
-            },
-            400,
-        );
-      }
-
-      const project =
-        await projects.get(projectId);
-
-      if (!project) {
-        return c.json(
-          {
-            error: "Not Found",
-            message: "Project not found",
-          },
-          404,
-        );
-      }
-
-      if (project.clerkUserId !== userId) {
-        return c.json(
-          {
-            error: "Forbidden",
-            message: "You do not have access to this project",
-          },
-          403,
-        );
-      }
-
-      const keys =
-        await apiKeys.listByProject(projectId!);
-
-      return c.json(keys);
-    },
-  );
-
-  /*
-   * Revoke API key
-   *
-   * POST /projects/:projectId/api-keys/:keyId/revoke
-   */
-  app.post(
-    "/projects/:projectId/api-keys/:keyId/revoke",
-    requireClerkAuth,
-    async (c) => {
-      const userId = getUserId(c);
-      const projectId = c.req.param("projectId");
-      const keyId = c.req.param("keyId");
+      const projectId =
+        c.req.param("projectId");
 
       if (!projectId) {
         return c.json(
-            {
+          {
             error: "Bad Request",
             message: "Project ID is required",
-            },
-            400,
+          },
+          400,
         );
       }
+
+      try {
+        const created =
+          await apiKeys.create({
+            projectId,
+            name,
+          });
+
+        /*
+        * The secret is returned exactly once.
+        * Only the hash is persisted.
+        */
+        return c.json(
+          {
+            id: created.apiKey.id,
+            projectId:
+              created.apiKey.projectId,
+            name: created.apiKey.name,
+            keyPrefix:
+              created.apiKey.keyPrefix,
+            createdAt:
+              created.apiKey.createdAt,
+            secret: created.secret,
+          },
+          201,
+        );
+      } catch (error) {
+        return c.json(
+          {
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
+          },
+          500,
+        );
+      }
+    },
+  );
+
+  /*
+  
+  * List API keys
+  *
+  * GET /dashboard/projects/:projectId/api-keys
+    */
+  app.get(
+    "/dashboard/projects/:projectId/api-keys",
+    requireClerkAuth,
+    requireClerkProjectAccess(projects),
+    async (c) => {
+      const projectId =
+        c.req.param("projectId");
+
+      if (!projectId) {
+        return c.json(
+          {
+            error: "Bad Request",
+            message: "Project ID is required",
+          },
+          400,
+        );
+      }
+
+      try {
+        const keys =
+          await apiKeys.listByProject(
+            projectId,
+          );
+
+        return c.json(keys, 200);
+      } catch (error) {
+        return c.json(
+          {
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
+          },
+          500,
+        );
+      }
+    },
+  );
+
+  /*
+  
+  * Revoke API key
+  *
+  * POST /dashboard/projects/:projectId/api-keys/:keyId/revoke
+    */
+  app.post(
+    "/dashboard/projects/:projectId/api-keys/:keyId/revoke",
+    requireClerkAuth,
+    requireClerkProjectAccess(projects),
+    async (c) => {
+      const projectId =
+        c.req.param("projectId");
+
+      const keyId =
+        c.req.param("keyId");
+
+      if (!projectId) {
+        return c.json(
+          {
+            error: "Bad Request",
+            message: "Project ID is required",
+          },
+          400,
+        );
+      }
+
       if (!keyId) {
         return c.json(
-            {
+          {
             error: "Bad Request",
             message: "Key ID is required",
+          },
+          400,
+        );
+      }
+
+      try {
+        const keys =
+          await apiKeys.listByProject(
+            projectId,
+          );
+
+        const keyBelongsToProject =
+          keys.some(
+            (key) => key.id === keyId,
+          );
+
+        if (!keyBelongsToProject) {
+          return c.json(
+            {
+              error: "Not Found",
+              message: "API key not found",
             },
-            400,
-        );
-      }
+            404,
+          );
+        }
 
-      const project =
-        await projects.get(projectId);
+        const revoked =
+          await apiKeys.revoke(keyId);
 
-      if (!project) {
         return c.json(
           {
-            error: "Not Found",
-            message: "Project not found",
+            id: revoked.id,
+            projectId:
+              revoked.projectId,
+            name: revoked.name,
+            keyPrefix:
+              revoked.keyPrefix,
+            createdAt:
+              revoked.createdAt,
+            lastUsedAt:
+              revoked.lastUsedAt,
+            revokedAt:
+              revoked.revokedAt,
           },
-          404,
+          200,
         );
-      }
-
-      if (project.clerkUserId !== userId) {
+      } catch (error) {
         return c.json(
           {
-            error: "Forbidden",
-            message: "You do not have access to this project",
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
           },
-          403,
+          500,
         );
       }
-
-      const keys =
-        await apiKeys.listByProject(projectId);
-
-      const keyBelongsToProject =
-        keys.some(
-          (key) => key.id === keyId,
-        );
-
-      if (!keyBelongsToProject) {
-        return c.json(
-          {
-            error: "Not Found",
-            message: "API key not found",
-          },
-          404,
-        );
-      }
-
-      const revoked =
-        await apiKeys.revoke(keyId);
-
-      return c.json({
-        id: revoked.id,
-        projectId: revoked.projectId,
-        name: revoked.name,
-        keyPrefix: revoked.keyPrefix,
-        createdAt: revoked.createdAt,
-        lastUsedAt: revoked.lastUsedAt,
-        revokedAt: revoked.revokedAt,
-      });
     },
   );
 
