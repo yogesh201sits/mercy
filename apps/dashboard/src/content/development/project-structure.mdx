@@ -1,0 +1,35 @@
+---
+title: Project structure
+description: Mercy workspace applications and package responsibilities.
+---
+
+# Project structure
+
+Mercy is a Bun workspace monorepo. Root `package.json` includes `apps/*` and `packages/*`; package manifests use `workspace:*` dependencies and currently mark the packages private.
+
+## Applications
+
+| Path | Responsibility |
+| --- | --- |
+| `apps/api` | Hono API server, Clerk authentication, action/group routes, and runtime composition. |
+| `apps/dashboard` | Next.js dashboard and Nextra documentation under `src/content`. |
+
+## Packages
+
+| Package | Responsibility |
+| --- | --- |
+| `packages/shared` | Shared Zod schemas, identifiers, hashing, and `MercyError`. |
+| `packages/core` | Action, adapter, snapshot, journal-store, undo, and group contracts. |
+| `packages/journal` | Action and action-group journal contracts and in-memory implementations. |
+| `packages/snapshots` | `SnapshotStorage` contract and local file-backed storage. |
+| `packages/runtime` | `MercyRuntime` orchestration and action executor. |
+| `packages/undo` | Undo engine and adapter coordination. |
+| `packages/filesystem` | Root-scoped filesystem action adapter. |
+| `packages/postgres-adapter` | PostgreSQL row and supported bulk action adapter. |
+| `packages/postgres` | Prisma client, Mercy metadata schema, PostgreSQL journals and snapshot metadata store. |
+| `packages/sdk` | Typed Mercy client and local/HTTP transports. |
+| `packages/custom-adapter` | Handler-forwarding `CustomAdapter` convenience class. |
+
+Tests live both beside packages (for example `packages/postgres-adapter/tests`) and in the root `tests` directory. Runnable agent examples are in `examples/langgraph-agent`.
+
+See [local setup](/docs/development/local-setup) and [testing](/docs/development/testing).

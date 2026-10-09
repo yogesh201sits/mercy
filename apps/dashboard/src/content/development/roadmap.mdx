@@ -1,0 +1,36 @@
+---
+title: Status and roadmap
+description: Implemented behavior, known gaps, and areas without a published plan.
+---
+
+# Status and roadmap
+
+This page distinguishes source-backed behavior from known incomplete pieces. The repository does not include a committed product roadmap or feature schedule; items described as gaps are not promises about delivery.
+
+## Implemented in the current source
+
+- Shared action, result, lifecycle, group, snapshot, storage, and adapter contracts.
+- `MercyRuntime` orchestration, action/group journals, and reverse-order group undo.
+- Filesystem create, update, delete, rename, and move operations beneath a configured root.
+- PostgreSQL row create/update/delete and custom bulk update/delete operations with prior-state snapshots.
+- PostgreSQL-backed Mercy journals and snapshot metadata, with snapshot bytes currently stored through local filesystem storage in the API composition.
+- TypeScript SDK with HTTP and in-process transports.
+- API and dashboard applications; tests include filesystem, runtime, SDK, journal, and PostgreSQL integration coverage.
+
+These features are implemented but that alone is not evidence of production readiness. In particular, deployment, persistence, security, race behavior, retention, and recovery need operational validation.
+
+## Current limitations found in code
+
+- `LocalSnapshotStore` cannot retrieve metadata or read/delete snapshots, so it cannot complete undo by itself.
+- API snapshot bytes are local and the snapshot root is hard-coded; this is not a shared/remote storage configuration.
+- The filesystem path guard rejects lexical traversal but does not resolve symlinks; delete undo also lacks an after-state conflict hash.
+- Undo and group undo are not transactions. Group undo can stop after partially undoing earlier operations.
+- PostgreSQL bulk operations are limited to update/delete using one filter and have no bulk create operation.
+- No CLI package/command is implemented, and workspace packages are marked private.
+- No published schedule or formal roadmap was found for further integrations or infrastructure features.
+
+## Areas requiring a planned design
+
+Before describing these as supported, the project needs implementation and tests for durable shared snapshot storage, local snapshot metadata retrieval, snapshot integrity verification, conflict/race handling guarantees, operational retention, and a supported public package release/installation story. These are identified gaps, not committed roadmap dates.
+
+See [snapshots](/docs/concepts/snapshots), [undo and recovery](/docs/concepts/undo-and-recovery), and [project structure](/docs/development/project-structure).

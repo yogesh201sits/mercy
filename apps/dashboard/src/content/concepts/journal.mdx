@@ -1,0 +1,32 @@
+---
+title: Journal and history
+description: Action records, state transitions, groups, and history storage.
+---
+
+# Journal and history
+
+The journal records action identity, target, lifecycle status, timestamps, the linked prior-state snapshot, result hashes, and undo results. Use it to inspect what Mercy attempted and what state the runtime recorded.
+
+## Action records
+
+The `ActionJournal` contract supports `create`, lifecycle updates, `get(actionId)`, and `list(projectId)`. The durable PostgreSQL implementation stores result and metadata as JSON and lists a project's actions newest first. The in-memory implementation is useful for tests, but its entries do not survive process exit.
+
+The runtime records `pending` before preparation, then attaches the snapshot and advances to `running`. It ends in `completed` or `failed`; undo uses `undoing` and then `undone` or `undo_failed`. Timestamps are present for creation, execution start, and completion where the implementation sets them.
+
+## Groups
+
+Groups associate action IDs and allow a related set of operations to be undone in reverse action order. The runtime accepts actions only into `pending` or `running` groups, requires matching project IDs, and rejects completing an empty group. Group status includes `pending`, `running`, `completed`, `failed`, `undoing`, `undone`, and `undo_failed`.
+
+Group undo processes completed actions in reverse order and stops on the first unsuccessful undo. This is not an atomic rollback: earlier actions in the reverse pass may already have been undone. See [undo and recovery](/docs/concepts/undo-and-recovery).
+
+## Persistence and limits
+
+`@mercy/postgres` implements action and group journals using the Prisma schema under `packages/postgres/prisma/schema.prisma`. The schema includes projects, actions, groups, group membership, and snapshot metadata. Migration files are under `packages/postgres/prisma/migrations`.
+
+The in-memory journal and the PostgreSQL journal implement the same contract, but only the latter persists action records. The HTTP API currently wires the PostgreSQL journal. Journal retention, pruning, and a general-purpose CLI are not implemented as user-facing features.
+
+## Related pages
+
+- [Storage API](/docs/reference/storage-api)
+- [Runtime integration](/docs/guides/runtime-integration)
+- [Development testing](/docs/development/testing)

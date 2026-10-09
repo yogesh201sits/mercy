@@ -1,0 +1,20 @@
+---
+title: Runtime
+description: How MercyRuntime coordinates journals, adapters, snapshots, and undo.
+---
+
+# Runtime
+
+`MercyRuntime` is the coordinator for action execution, action groups, and undo. Construct it with an `ActionJournal`, an `ActionGroupJournal`, a `SnapshotStore`, and the adapter instances that can act on the supported targets.
+
+## Execution flow
+
+For `execute(input, groupId?)`, the runtime selects the first adapter whose `canHandle` returns true. It records the action, validates and attaches an optional group, prepares the action, captures and persists a snapshot, marks the action running, and delegates execution. The runtime then records the returned success or failure.
+
+`undo(actionId)` delegates to `UndoEngine`. `startGroup`, `completeGroup`, `undoGroup`, `getAction`, `listActions`, `getGroup`, and `listGroups` expose the group and journal operations. Group undo is sequential and reverse ordered, not transactional.
+
+## Dependencies are explicit
+
+The runtime constructor does not create a database connection, select a filesystem root, or choose snapshot storage. Those resources are created by the host application and injected. The API composition in `apps/api/src/runtime.ts` is a working example: it wires PostgreSQL journals and snapshot metadata, local snapshot bytes, a filesystem adapter, and a PostgreSQL target adapter.
+
+See the [runtime integration guide](/docs/guides/runtime-integration) for a construction example and [core API](/docs/reference/core-api) for the contracts.

@@ -1,0 +1,70 @@
+---
+title: PostgreSQL adapter
+description: Configure PostgreSQL actions, target tables, and snapshot persistence.
+---
+
+# PostgreSQL adapter
+
+`PostgresAdapter` applies supported row operations to a PostgreSQL database using a `pg` `Pool`. The database being acted on can be separate from Mercy's own persistence database; keep those connections and credentials distinct.
+
+## Connection roles and schema
+
+The current API composition uses:
+
+- `DATABASE_URL` for Prisma and Mercy's own projects, API keys, action/group journals, and snapshot metadata.
+- `CLIENT_DATABASE_URL` for the `pg` pool used by `PostgresAdapter` to operate on application tables.
+
+The API runtime requires both values. The Prisma schema and migration files for Mercy-owned metadata are in `packages/postgres/prisma/`. The target database must also contain the tables and columns your actions address; Mercy does not create or migrate application tables.
+
+Snapshot bytes are written using `LocalSnapshotStorage` under `.real-db-snapshots` in the API process working directory. That directory is currently hard-coded by the API composition; metadata and snapshot bytes therefore have separate persistence requirements.
+
+## Supported operations
+
+For ordinary `create`, `update`, and `delete` actions, `target` is a table name or `schema.table`. Metadata includes `primaryKey` and `primaryKeyValue`; `create` also needs a non-empty `data` object and `update` a non-empty `changes` object. `delete` removes the selected row.
+
+For bulk operations, use `type: "custom"` and one of:
+
+- `operation: "delete_rows"` with `primaryKey` and a single `where` filter.
+- `operation: "update_rows"` with `primaryKey`, `where`, and non-empty `changes`.
+
+The current filter operators are `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, and `in`. Bulk actions snapshot the matching rows before mutation. There is no bulk create operation.
+
+```ts
+const result = await mercy.execute({
+  projectId,
+  type: "update",
+  target: "public.users",
+  metadata: {
+    primaryKey: "id",
+    primaryKeyValue: 42,
+    changes: { display_name: "Mercy test" },
+  },
+});
+```
+
+For a bulk delete, the input shape is:
+
+```ts
+const result = await mercy.execute({
+  projectId,
+  type: "custom",
+  target: "public.users",
+  metadata: {
+    operation: "delete_rows",
+    primaryKey: "id",
+    where: { field: "status", operator: "eq", value: "temporary" },
+  },
+});
+```
+
+These examples require an initialized `mercy` client and a configured PostgreSQL adapter; see [runtime integration](/docs/guides/runtime-integration).
+
+## Safety and recovery behavior
+
+Identifiers are validated and quoted by the adapter; filter and row values are passed as query parameters. `allowedTables` can restrict which normalized tables the adapter handles. If omitted or empty, no table allow-list is applied by the adapter, so configure it explicitly when your runtime should be limited to a known set.
+
+Before undo, the adapter compares current row state with the after-action hash. If the affected state has changed, it reports a conflict rather than restoring. For bulk operations the behavior is based on the affected rows, not a database-wide transaction or lock spanning execution and later undo. A conflict is reported in `UndoResult`; a non-conflict operation error can still make undo fail.
+
+This integration currently targets PostgreSQL and has real-database integration tests. It does not provide a CLI for schema setup; apply the included Prisma migrations using your project's migration workflow and provision target tables separately.
+
+Related: [journal and history](/docs/concepts/journal), [snapshots](/docs/concepts/snapshots), and [environment variables](/docs/reference/environment-variables).

@@ -1,0 +1,160 @@
+---
+title: Building a custom adapter
+description: Implement and test an ActionAdapter for a new target system.
+---
+
+# Building a custom adapter
+
+Build an adapter when the runtime needs to make operations in a new target system reversible. Mercy's custom-adapter package provides `CustomAdapter` to forward an `ActionAdapter` contract to six handler functions; it does not supply target-specific persistence or recovery logic.
+
+## Implementation steps
+
+1. Define which `ActionInput` values your adapter accepts. Keep `canHandle` narrow so it does not shadow another registered adapter.
+2. Validate the target and metadata in `prepare`. Return the runtime-provided `actionId`, original input, and a valid `undoStrategy` (`restore`, `reverse`, or `compensate`).
+3. In `snapshot`, capture enough prior state to undo. Encode it into `CapturedState.data` as `Uint8Array`; put versioned descriptive fields in metadata when useful.
+4. In `execute`, perform one operation and return an `ActionResult` with the same action ID. Supply `afterHash` if the adapter supports later conflict checks.
+5. In `verify`, check whether the current target still matches the state expected after execution. Report a conflict with a reason rather than overwriting changed state.
+6. In `undo`, decode the captured bytes, restore or reverse the operation, and return an `UndoResult`. Keep this logic compatible with snapshots already written by your adapter.
+7. Register the adapter in `MercyRuntimeOptions.adapters`; test success, missing state, invalid input, thrown errors, returned failures, conflicts, and undo.
+
+## Working example: reversible in-memory key/value action
+
+This example implements all six handlers for a tiny in-memory key/value target. It demonstrates how the captured bytes encode prior state and how `afterHash` allows the adapter to detect a later change. The target map is intentionally process-local: use a persistent target system and durable state in a real adapter.
+
+```ts
+import { createHash } from "node:crypto";
+import { CustomAdapter } from "@mercy/custom-adapter";
+import type { Action } from "@mercy/core";
+
+const records = new Map<string, string>();
+
+function keyFromTarget(target: string): string {
+  if (!target.startsWith("my-system:") || target.length === "my-system:".length) {
+    throw new Error("Target must be my-system:<key>");
+  }
+  return target.slice("my-system:".length);
+}
+
+function hashState(state: { exists: boolean; value: string | null }): string {
+  return createHash("sha256").update(JSON.stringify(state)).digest("hex");
+}
+
+function currentState(key: string): { exists: boolean; value: string | null } {
+  const exists = records.has(key);
+  return { exists, value: records.get(key) ?? null };
+}
+
+function verifyAction(action: Action) {
+  if (!action.afterHash) {
+    return {
+      valid: false,
+      conflict: false,
+      reason: "Action has no after-state hash",
+    };
+  }
+  const key = keyFromTarget(action.target);
+  const matches = hashState(currentState(key)) === action.afterHash;
+  return {
+    valid: matches,
+    conflict: !matches,
+    ...(matches ? {} : { reason: "Key changed after the action completed" }),
+  };
+}
+
+const adapter = new CustomAdapter({
+  name: "my-system",
+  handlers: {
+    canHandle(input) {
+      return input.type === "custom" &&
+        input.target.startsWith("my-system:") &&
+        input.target.length > "my-system:".length;
+    },
+    async prepare(input) {
+      const actionId = input.metadata?.actionId;
+      if (typeof actionId !== "string" || actionId.length === 0) {
+        throw new Error("Mercy actionId is required");
+      }
+      keyFromTarget(input.target);
+      if (typeof input.metadata?.value !== "string") {
+        throw new Error("Custom action requires metadata.value");
+      }
+      return {
+        actionId,
+        input,
+        undoStrategy: "compensate",
+      };
+    },
+    async snapshot(action) {
+      const key = keyFromTarget(action.input.target);
+      const state = currentState(key);
+      return {
+        data: new TextEncoder().encode(JSON.stringify(state)),
+        metadata: { format: "my-system-state-v1", key },
+      };
+    },
+    async execute(action) {
+      const key = keyFromTarget(action.input.target);
+      const value = action.input.metadata?.value;
+      if (typeof value !== "string") {
+        return {
+          actionId: action.actionId,
+          success: false,
+          error: "Custom action requires metadata.value",
+        };
+      }
+      records.set(key, value);
+      return {
+        actionId: action.actionId,
+        success: true,
+        result: { key, value },
+        afterHash: hashState(currentState(key)),
+      };
+    },
+    async undo(action, _snapshot, data) {
+      const key = keyFromTarget(action.target);
+      const verification = verifyAction(action);
+      if (verification.conflict) {
+        return {
+          actionId: action.id,
+          success: false,
+          conflict: true,
+          error: verification.reason,
+        };
+      }
+
+      try {
+        const previous = JSON.parse(new TextDecoder().decode(data)) as {
+          exists: boolean;
+          value: string | null;
+        };
+        if (previous.exists && typeof previous.value === "string") {
+          records.set(key, previous.value);
+        } else if (!previous.exists) {
+          records.delete(key);
+        } else {
+          throw new Error("Snapshot value is invalid");
+        }
+        return { actionId: action.id, success: true, conflict: false };
+      } catch (error) {
+        return {
+          actionId: action.id,
+          success: false,
+          conflict: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+    async verify(action) {
+      return verifyAction(action);
+    },
+  },
+});
+
+// Register `adapter` in the adapters array passed to MercyRuntime.
+```
+
+The example is complete for its in-memory demonstration target. In a real adapter, handle persistent storage, serialization/versioning, target-specific validation, and partial failures. The hash check and restoration are separate operations; a concurrent write can still race them. Undo behavior should be tested against the actual target system.
+
+The `CustomAdapter` class only delegates to the supplied handlers. It does not add validation, persistence, transactionality, or error recovery. The actual signatures are in [Adapter API](/docs/reference/adapter-api); the runtime flow is described in [adapter architecture](/docs/concepts/adapters).
+
+The workspace TypeScript path alias currently resolves `@mercy/custom-adapter` to `packages/custom-adapter/src/index.ts`, but this package manifest does not declare a package export map. Treat this as an in-repository import, not a supported published package entry point.

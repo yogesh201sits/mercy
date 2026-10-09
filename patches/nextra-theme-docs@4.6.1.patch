@@ -1,0 +1,8 @@
+--- a/dist/layout.js
++++ b/dist/layout.js
+@@ -27,4 +27,4 @@
+     const {
+       data: t12,
+       error
+-    } = LayoutPropsSchema.safeParse(themeConfig);
++    } = LayoutPropsSchema.safeParse({ ...themeConfig, children });

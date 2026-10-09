@@ -1,0 +1,47 @@
+---
+title: Local development setup
+description: Install dependencies and start the Mercy API and dashboard.
+---
+
+# Local development setup
+
+Use Bun to work in the repository's configured workspace. The root manifest declares Bun `1.3.14` as its package manager. Mercy's packages are private workspace packages and are not documented as published npm dependencies.
+
+## Install
+
+From the repository root:
+
+```sh
+bun install
+```
+
+## Configure the API
+
+The API runtime reads `.env` from `apps/api/.env`. It needs `DATABASE_URL` for Mercy's Prisma metadata database, `CLIENT_DATABASE_URL` for the PostgreSQL target adapter, and Clerk's `CLERK_SECRET_KEY` and `CLERK_PUBLISHABLE_KEY`. `PORT` defaults to `3000`; see [environment variables](/docs/reference/environment-variables).
+
+The metadata schema and migrations are in `packages/postgres/prisma/`. The repository does not define a root database setup/migration script; provision the metadata database and apply migrations using the existing Prisma configuration and your team's database workflow before starting the API.
+
+## Start applications
+
+Start the API:
+
+```sh
+bun run --filter @mercy/api dev
+```
+
+Start the dashboard in another terminal:
+
+```sh
+bun run --filter @mercy/dashboard dev
+```
+
+The API source listens on port `3000` by default. The dashboard reads `NEXT_PUBLIC_MERCY_API_URL` and defaults to that API URL. The API health route is available through the API app; authenticated project actions additionally require a valid API key or user session depending on the route.
+
+## Verify the docs application
+
+```sh
+bun run --filter @mercy/dashboard build
+bunx tsc --noEmit -p apps/dashboard/tsconfig.json
+```
+
+The dashboard package defines `build` but not a dedicated `typecheck` script. The root also provides `bun run typecheck` for its configured TypeScript project. See [testing](/docs/development/testing) for repository test commands and database prerequisites.

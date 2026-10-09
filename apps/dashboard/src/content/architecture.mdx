@@ -1,0 +1,36 @@
+---
+
+title: Architecture
+description: Mercy's runtime, action journal, snapshots, adapters, and SDK.
+---
+
+# Architecture
+
+Mercy separates action execution from the mechanisms responsible for recording, capturing, and restoring state.
+
+## Main components
+
+| Component | Responsibility                       |
+| --------- | ------------------------------------ |
+| Core      | Shared action types and contracts    |
+| Runtime   | Coordinates execution and recovery   |
+| Adapters  | Interact with external systems       |
+| Snapshots | Capture state needed for restoration |
+| Journal   | Record action lifecycle and results  |
+| SDK       | Provide application-facing APIs      |
+| API       | Expose authenticated HTTP operations |
+
+## Action lifecycle
+
+1. Receive and validate an action request.
+2. Select an adapter that supports the requested operation.
+3. Capture the required prior state.
+4. Execute the action and record its outcome.
+5. Verify the resulting state where supported.
+6. On undo, check for conflicts before attempting restoration.
+
+## Extending the system
+
+New integrations should follow the existing core contracts. Avoid adding adapter-specific branches throughout the runtime when the same behavior can be expressed through a stable interface.
+
+Before adding a new extension point, document its contract, error behavior, lifecycle requirements, and tests.

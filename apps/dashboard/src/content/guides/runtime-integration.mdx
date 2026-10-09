@@ -1,0 +1,83 @@
+---
+title: Runtime integration
+description: Compose MercyRuntime with its storage, journal, and adapter dependencies.
+---
+
+# Runtime integration
+
+Use `MercyRuntime` when your application hosts Mercy directly. The runtime does not construct stores or connections for you; the host injects a journal, group journal, snapshot store, and ordered adapter list.
+
+## PostgreSQL-backed composition
+
+This follows the composition in `apps/api/src/runtime.ts`. It needs the runtime packages in the workspace, `DATABASE_URL` for Mercy-owned metadata, `CLIENT_DATABASE_URL` for the target PostgreSQL database, and filesystem paths writable by the process.
+
+```ts
+import { resolve } from "node:path";
+import { Pool } from "pg";
+import {
+  PostgresActionGroupJournal,
+  PostgresActionJournal,
+  PostgresSnapshotStore,
+  createPrismaClient,
+} from "@mercy/postgres";
+import { FilesystemAdapter } from "@mercy/filesystem";
+import { PostgresAdapter } from "@mercy/postgres-adapter";
+import { LocalSnapshotStorage } from "@mercy/snapshots";
+import { MercyRuntime } from "@mercy/runtime";
+
+const prisma = createPrismaClient();
+const clientDatabaseUrl = process.env.CLIENT_DATABASE_URL;
+if (!clientDatabaseUrl) {
+  throw new Error("CLIENT_DATABASE_URL must be set");
+}
+
+const clientPool = new Pool({ connectionString: clientDatabaseUrl });
+const snapshots = new PostgresSnapshotStore(
+  prisma,
+  new LocalSnapshotStorage(resolve(".real-db-snapshots")),
+);
+
+const runtime = new MercyRuntime({
+  journal: new PostgresActionJournal(prisma),
+  groupJournal: new PostgresActionGroupJournal(prisma),
+  snapshots,
+  adapters: [
+    new FilesystemAdapter(resolve(".mercy-workspace")),
+    new PostgresAdapter({
+      pool: clientPool,
+      allowedTables: ["public.users"],
+    }),
+  ],
+});
+
+const result = await runtime.execute({
+  projectId: "your-existing-project-id",
+  type: "create",
+  target: "hello.txt",
+  metadata: { content: "Hello from Mercy" },
+});
+
+if (!result.success) {
+  throw new Error(result.error ?? "Action failed");
+}
+
+const undo = await runtime.undo(result.actionId);
+if (!undo.success) {
+  throw new Error(undo.error ?? "Undo failed");
+}
+
+await clientPool.end();
+await prisma.$disconnect();
+```
+
+Use a real project ID already present in Mercy's metadata database. In the API composition, project creation and API-key handling are exposed through authenticated application routes.
+
+## In-memory components
+
+The journal package includes `InMemoryActionJournal` and `InMemoryActionGroupJournal`, which are useful for isolated tests. They lose records when the process exits. `LocalSnapshotStore` is not a complete drop-in undo store yet: its metadata lookup and read/delete methods are unimplemented. Use the PostgreSQL-backed snapshot store for a complete current runtime path.
+
+## SDK clients
+
+For an application calling a running Mercy API instead of constructing the runtime in-process, create `HttpTransport` and pass it to `new MercyClient({ transport })`. See [TypeScript SDK](/docs/reference/typescript-sdk).
+
+The construction example is for local development. Production deployments need a persistent snapshot byte store and secure storage of both database connection strings and API keys; the current API sample uses local filesystem snapshot bytes.

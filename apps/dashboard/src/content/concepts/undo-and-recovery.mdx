@@ -1,0 +1,31 @@
+---
+title: Undo and recovery
+description: How Mercy checks and attempts to restore action state.
+---
+
+# Undo and recovery
+
+`MercyRuntime.undo(actionId)` asks the recorded action's adapter to restore its captured state. Use it after an action completes when the adapter has a stored snapshot and can determine whether later changes make restoration unsafe.
+
+## Execution steps
+
+The undo engine loads the journal record, returns the prior undo result for an already-undone action, and requires a `beforeSnapshotId`. It selects an adapter, marks the action `undoing`, calls `verify`, reads the snapshot, and invokes adapter `undo`. A conflict or unsuccessful result is recorded as `undo_failed`; success is recorded as `undone`. Thrown errors are recorded with an unsuccessful undo result and then rethrown.
+
+An unsuccessful `UndoResult` has `success: false`; `conflict` distinguishes a detected conflict from another failure. A missing action, adapter, or snapshot is reported as a `MercyError`. See [error handling](/docs/guides/error-handling).
+
+## Conflict checks and adapter behavior
+
+Conflict detection is adapter-specific, not a global guarantee:
+
+- Filesystem create/update/rename/move actions carry a content hash and compare it with the current file before undo. A changed or missing resource is treated as a conflict. For rename/move the destination is checked. Delete results do not include an after-hash, so the filesystem verifier cannot detect a recreated file before restoring the snapshot.
+- PostgreSQL compares the current row or affected-row state with the action's after-state hash. The adapter's verification result controls whether undo proceeds.
+
+Filesystem undo also refuses to reverse a rename/move if the original path has been recreated. These checks reduce accidental overwrites, but do not make operations atomic or protect against races between verification and restoration.
+
+## Groups and limitations
+
+Group undo runs actions in reverse order, sequentially, and stops at the first failure. It can leave earlier actions in the group already undone. There is no automatic retry or compensation of partial group undo.
+
+The runtime does not reject every non-completed status before direct action undo; callers should request undo only for completed actions. Recovery also depends on snapshot bytes and metadata remaining available and compatible with the current adapter. Treat undo as a best-effort adapter operation, not a universal guarantee.
+
+Related: [actions](/docs/concepts/actions), [journal and history](/docs/concepts/journal), and [snapshots](/docs/concepts/snapshots).
