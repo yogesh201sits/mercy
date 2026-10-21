@@ -60,7 +60,7 @@ import {
 // ============================================================
 
 const projectId =
-  `langgraph-demo-${crypto.randomUUID()}`;
+  `dec3c0b2-286b-4e62-8256-963601330716`;
 
 const workspaceRoot =
   join(
@@ -203,7 +203,6 @@ async function main() {
   // ==========================================================
   // CREATE FILE
   // ==========================================================
-
   const createFile =
     tool(
       async ({

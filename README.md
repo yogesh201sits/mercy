@@ -73,7 +73,7 @@ The objective is to make recovery reusable across integrations without embedding
 | HTTP API | Expose supported Mercy operations through an API |
 | Custom adapters | Allow integrations with additional systems |
 | Action groups | Represent related actions through group-related runtime and journal capabilities |
-| MCP integration | Planned interface for exposing Mercy capabilities to MCP-compatible agent workflows; currently in development |
+| MCP integration | Early stdio server exposing action, undo, history, and action-group tools; currently in development |
 
 Feature availability depends on the relevant adapter, storage implementation, and integration path.
 
@@ -97,7 +97,8 @@ mercy/
 │   ├── filesystem/          # Filesystem adapter
 │   ├── postgres/            # PostgreSQL integration and persistence
 │   ├── sdk/                 # Application-facing SDK
-│   └── runtime/             # Execution and recovery orchestration
+│   ├── runtime/             # Execution and recovery orchestration
+│   └── mcp/                 # MCP stdio server and tool definitions
 │
 ├── package.json
 ├── bun.lock
@@ -340,15 +341,40 @@ An adapter should not claim that an operation is reversible unless its restorati
 
 ## MCP Integration
 
-Mercy's MCP integration is currently in development.
+Mercy's MCP server is an early implementation and is not yet production-ready.
 
-The intended direction is to expose supported Mercy capabilities through an MCP server so compatible agent workflows can invoke recovery-related tools.
+It connects to the Mercy HTTP API using the SDK and exposes these tools:
 
-Potential tools include operations for creating snapshots, executing supported actions, inspecting action history, and requesting undo.
+- `mercy_execute`, `mercy_undo`
+- `mercy_get_action`, `mercy_list_actions`
+- `mercy_start_group`, `mercy_complete_group`, `mercy_undo_group`
+- `mercy_get_group`, `mercy_list_groups`
 
-The intended integration model is adapter-aware: exposed capabilities should reflect the operations and recovery behavior that the configured adapters actually support.
+Run it from the repository root after installing workspace dependencies. In
+PowerShell:
 
-MCP support should not be treated as production-ready until the server, tool contracts, authorization model, and end-to-end recovery flows have been implemented and validated.
+```powershell
+$env:MERCY_API_KEY = "your-api-key"
+bun run --cwd packages/mcp start
+```
+
+In a POSIX shell:
+
+```bash
+MERCY_API_KEY=your-api-key bun run --cwd packages/mcp start
+```
+
+Configuration:
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `MERCY_API_KEY` | Yes | API credential used for requests to the Mercy HTTP API |
+| `MERCY_API_URL` | No | API base URL; defaults to `http://localhost:3000` |
+| `MERCY_PROJECT_ID` | No | Default project ID for tools that accept a project ID |
+
+Project-scoped tools can instead receive `projectId` directly. Keep credentials in the local MCP client's environment; do not put them in source control or expose this server to untrusted callers. The server does not replace API authorization or project-access controls.
+
+Validate the package with `bun run --cwd packages/mcp test` and `bun run --cwd packages/mcp typecheck`. Group undo is not transactional and can report partial failure. Confirm adapter support and recovery behavior for each action type before relying on it.
 
 ---
 
