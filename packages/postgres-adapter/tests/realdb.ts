@@ -40,7 +40,7 @@ if (!databaseUrl) {
 }
 
 const projectId =
-  `real-db-${crypto.randomUUID()}`;
+  `dec3c0b2-286b-4e62-8256-963601330716`;
 
 const tableName =
   `mercy_real_users_${crypto.randomUUID().replaceAll("-", "_")}`;

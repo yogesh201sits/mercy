@@ -1,5 +1,3 @@
-import { MercyHttpError } from "./error";
-
 export {
   MercyClient,
 } from "./client";
